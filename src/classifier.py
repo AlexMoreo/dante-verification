@@ -1,6 +1,6 @@
 from sklearn.svm import *
 from sklearn.model_selection import cross_val_score, GridSearchCV
-from doc_representation2 import *
+from doc_representation import *
 from sklearn.metrics import f1_score, make_scorer
 
 probability=False
