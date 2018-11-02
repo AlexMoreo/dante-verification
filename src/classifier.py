@@ -1,30 +1,37 @@
 from sklearn.svm import *
 from sklearn.model_selection import cross_val_score, GridSearchCV
-from doc_representation import *
 from sklearn.metrics import f1_score, make_scorer
+from doc_representation import *
 
-probability=False
-# SVM = SVC
-SVM = LinearSVC
+# TODO: add function words
+# TODO: other split policies
+# TODO: understand normalization
+# TODO: mendel hall
+# TODO: wrap into an Estimator
+
+probability=True
+SVM = SVC
+# SVM = LinearSVC
 
 nfolds = 3
 params = {'C': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100, 1000], 'class_weight':['balanced',None]}
 if SVM is SVC:
-    params['kernel']=['linear','rbf']
+     params['kernel']=['linear','rbf']
 
 path = '../testi'
 
-Xtr,ytr,ep1,ep2 = load_documents(path, split_documents=True, function_words_freq=True, tfidf=True, tfidf_feat_selection_ratio=0.1)
+reader = LoadDocuments(split_documents=True, function_words_freq=True, tfidf=True, tfidf_feat_selection_ratio=0.1, split_policy=split_by_endline, normalize_features=True)
+Xtr,ytr,ep1,ep2 = reader.load(path)
 
 # learn a SVM
 
-# svm = SVM(probability=probability)
-svm = SVM()
+svm = SVM(probability=probability)
+# svm = SVM()
 
 positive_examples = ytr.sum()
 if positive_examples>nfolds:
     print('optimizing {}'.format(svm.__class__.__name__))
-    svm = GridSearchCV(svm, param_grid=params, cv=nfolds, scoring=make_scorer(f1_score))
+    svm = GridSearchCV(svm, param_grid=params, cv=nfolds, scoring=make_scorer(f1_score), n_jobs=-1)
 
 svm.fit(Xtr, ytr)
 
