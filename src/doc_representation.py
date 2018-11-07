@@ -1,5 +1,6 @@
 import disable_sklearn_warnings
 import nltk
+import re
 import numpy as np
 import os
 from os.path import join
@@ -10,7 +11,14 @@ from sklearn.preprocessing import normalize
 from scipy.sparse import hstack, csr_matrix, issparse
 import matplotlib.pyplot as plt
 
-function_words = ["et", "in", "de", "ad", "ut", "cum", "non", "per", "a", "que", "ex", "sed"]
+function_words = ['et', 'in', 'de', 'ad', 'ut', 'cum', 'non', 'per', 'a', 'que', 'ex','sed',
+                  'quia', 'nam', 'sic', 'si', 'ab', 'etiam', 'idest', 'nec', 'vel', 'atque',
+                  'scilicet', 'sicut', 'hec', 'vero', 'tamen', 'dum', 'propter', 'pro', 'enim',
+                  'ita', 'autem', 'inter', 'unde', 'sub', 'tam', 'ibi', 'ideo', 'ergo', 'post',
+                  'iam', 'seu', 'inde', 'tantum', 'sive', 'quomodo', 'ubi', 'ac', 'ob', 'igitur',
+                  'tunc', 'nisi', 'quasi', 'quantum', 'aut', 'usque', 'bene', 'ne', 'ante', 
+                  'nunc', 'magis', 'sine', 'circa', 'apud', 'contra', 'adhuc', 'satis', 'semper',
+                  'super', 'adeo', 'tandem', 'tanquam', 'quoniam', 'quin', 'quemadmodum', 'supra']
 
 
 # ------------------------------------------------------------------------
@@ -48,10 +56,23 @@ def split_by_endline(text):
 
 
 def split_by_sentences(text):
-    pass
+    sentences= [t.strip() for t in nltk.tokenize.sent_tokenize(text) if t.strip()]
+    #sentences= [t.strip() for t in re.split(r"\.|\?|\!\;", text) if t.strip()]
+
+    for sentence in sentences:
+        unmod_tokens = nltk.tokenize.word_tokenize(sentence)
+        mod_tokens = ([token for token in unmod_tokens if any(char.isalpha() for char in token)])
+        if len(mod_tokens)<8:
+            indx= sentences.index(sentence)
+            sentences[indx+1] = sentences[indx] + sentences[indx+1]
+            sentences.pop(indx)
+
+    return sentences
 
 
-def splitter(documents, authors=None, split_policy=split_by_endline):
+
+
+def splitter(documents, authors=None, split_policy=split_by_sentences):
     fragments = []
     authors_fragments = []
     for i, text in enumerate(documents):
@@ -70,21 +91,52 @@ def splitter(documents, authors=None, split_policy=split_by_endline):
 # TODO: implement other feature extraction methods
 def _features_function_words_freq(documents):
     """
-    Extract features as the frequency (x1000) of the functions used in the documents
+    Extract features as the frequency (x1000) of the function words used in the documents
     :param documents: a list where each element is the text (string) of a document
     :return: a np.array of shape (D,F) where D is len(documents) and F is len(function_words)
     """
     features = []
-    for text in documents:
-        tokens = nltk.word_tokenize(text)
-        author_tokens = ([token.lower() for token in tokens if any(char.isalpha() for char in token)])
-        # author_tokens = ([token.lower() for token in tokens])
-        freqs = nltk.FreqDist(author_tokens)
 
-        nwords = len(author_tokens)
+    for text in documents:
+        unmod_tokens = nltk.word_tokenize(text)
+        mod_tokens = ([token.lower() for token in unmod_tokens if any(char.isalpha() for char in token)])
+        #mod_tokens = ([token.lower() for token in unmod_tokens])
+        freqs = nltk.FreqDist(mod_tokens)
+
+        nwords = len(mod_tokens)
+
         funct_words_freq = [1000. * freqs[function_word] / nwords for function_word in function_words]
 
         features.append(funct_words_freq)
+
+    return np.array(features)
+
+
+def _features_Mendenhall(documents):
+    """
+    Extract features as the frequency (x1000) of the words' lengths used in the documents,
+    following the idea behind Mendenhall's Characteristic Curve of Composition
+    :param documents: a list where each element is the text (string) of a document
+    :return: a np.array of shape (D,F) where D is len(documents) and F is len(range of lengths considered)
+    """
+
+    features = []
+
+    for text in documents:
+        unmod_tokens = nltk.word_tokenize(text)
+        mod_tokens = ([token.lower() for token in unmod_tokens if any(char.isalpha() for char in token)])
+        nwords = len(mod_tokens)
+
+        tokens_len = [len(token) for token in mod_tokens]
+        freqs = nltk.FreqDist(tokens_len)
+        len_count = []
+        for length in range (1,22):
+            if length in freqs:
+                len_count.append(1000. * freqs[length] / nwords)
+            else:
+                len_count.append(0)
+
+        features.append(len_count)
 
     return np.array(features)
 
@@ -115,21 +167,12 @@ def _feature_selection(X, y, EP1, EP2, tfidf_feat_selection_ratio):
     return X,EP1,EP2
 
 
-def _features_mendel_hall(documents):
-    raise NotImplementedError('not yet implemented')
-    pass
-
-
-
-
-
-
 class LoadDocuments:
     def __init__(self,
                    function_words_freq=True,
+                   features_Mendenhall=True,
                    tfidf=False,
                    tfidf_feat_selection_ratio=1.,
-                   mendelhall=False,
                    split_documents=False,
                    split_policy = split_by_endline,
                    normalize_features=True,
@@ -140,6 +183,7 @@ class LoadDocuments:
         EpistolaXIII_2.txt concerning the two documents whose authorship attribution is to be determined.
         :param path: the path containing the texts, each named as <author>_<text_name>.txt
         :param function_words_freq: add the frequency of function words as features
+        :param features_Mendenhall: add the frequencies of the words' lengths as features
         :param tfidf: add the tfidf as features
         :param split_documents: whether to split text into smaller documents or not (currenty, the policy is to split by '\n').
         Currently, the fragments resulting from the split are added to the pool of documents (i.e., they do not replace the
@@ -155,8 +199,8 @@ class LoadDocuments:
         self.normalize_features=normalize_features
         self.split_documents = split_documents
         self.split_policy = split_policy
-        self.function_words_freq=function_words_freq
-        self.mendelhall = mendelhall
+        self.function_words_freq = function_words_freq
+        self.features_Mendenhall = features_Mendenhall
         self.tfidf = tfidf
         self.tfidf_feat_selection_ratio = tfidf_feat_selection_ratio
         self.verbose = verbose
@@ -188,10 +232,10 @@ class LoadDocuments:
             EP1 = self.addfeatures(EP1, _features_function_words_freq(ep1))
             EP2 = self.addfeatures(EP2, _features_function_words_freq(ep2))
 
-        if self.mendelhall:
-            X = self.addfeatures(X, _features_mendel_hall(documents))
-            EP1 = self.addfeatures(EP1, _features_mendel_hall(ep1))
-            EP2 = self.addfeatures(EP2, _features_mendel_hall(ep2))
+        if self.features_Mendenhall:
+            X = self.addfeatures(X, _features_Mendenhall(documents))
+            EP1 = self.addfeatures(EP1, _features_Mendenhall(ep1))
+            EP2 = self.addfeatures(EP2, _features_Mendenhall(ep2))
 
         # sparse feature extraction functions
         if self.tfidf:
@@ -212,8 +256,9 @@ class LoadDocuments:
 
         # print summary
         if self.verbose:
-            print('load_documents: function_words_freq={} tfidf={}, split_documents={}, split_policy={}'
-                  .format(self.function_words_freq, self.tfidf, self.split_documents, self.split_policy.__name__))
+            print('load_documents: function_words_freq={} features_Mendenhall={} tfidf={}, split_documents={}, split_policy={}'
+                  .format(self.function_words_freq, self.features_Mendenhall, self.tfidf, self.split_documents,
+                          self.split_policy.__name__))
             print('number of training (full) documents: {}'.format(n_original_docs))
             print('X shape (#documents,#features): {}'.format(X.shape))
             print('y prevalence: {:.2f}%'.format(y.mean()*100))
