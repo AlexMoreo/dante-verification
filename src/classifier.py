@@ -8,6 +8,7 @@ from doc_representation import *
 # TODO: understand normalization
 # TODO: mendel hall
 # TODO: wrap into an Estimator
+# TODO: check versions (numpy, scipy, sklearn)
 
 probability=True
 SVM = SVC
@@ -20,7 +21,7 @@ if SVM is SVC:
 
 path = '../testi'
 
-reader = LoadDocuments(split_documents=True, function_words_freq=True, tfidf=True, tfidf_feat_selection_ratio=0.1, split_policy=split_by_endline, normalize_features=True)
+reader = LoadDocuments(split_documents=True, function_words_freq=True, tfidf=False, tfidf_feat_selection_ratio=0.1, split_policy=split_by_endline, normalize_features=True)
 Xtr,ytr,ep1,ep2 = reader.load(path)
 
 # learn a SVM
