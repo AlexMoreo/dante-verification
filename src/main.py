@@ -1,33 +1,38 @@
+import disable_sklearn_warnings
 from sklearn.svm import *
 from sklearn.model_selection import cross_val_score, GridSearchCV
 from sklearn.metrics import f1_score, make_scorer
-from doc_representation import *
+from verification import *
 
-# TODO: add function words
 # TODO: other split policies
 # TODO: understand normalization
-# TODO: mendel hall
 # TODO: wrap into an Estimator
 # TODO: check versions (numpy, scipy, sklearn)
 
-probability=True
+
 SVM = SVC
 # SVM = LinearSVC
 
-nfolds = 3
+nfolds = 10
 params = {'C': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100, 1000], 'class_weight':['balanced',None]}
 if SVM is SVC:
      params['kernel']=['linear','rbf']
+     probability = True
+else:
+    probability = False
 
 path = '../testi'
 
-reader = LoadDocuments(split_documents=True, function_words_freq=True, tfidf=False, tfidf_feat_selection_ratio=0.1, split_policy=split_by_endline, normalize_features=True)
-Xtr,ytr,ep1,ep2 = reader.load(path)
+reader = DocumentLoader(function_words_freq=True, features_Mendenhall=True,
+                       tfidf=True, tfidf_feat_selection_ratio=0.1,
+                       ngrams=True, ns=[3,4,5],
+                       split_documents=True, split_policy=split_by_sentences, normalize_features=True, window_size=1, verbose=True)
+
+Xtr,ytr,ep1,ep2 = reader.load_documents(path)
 
 # learn a SVM
-
-svm = SVM(probability=probability)
-# svm = SVM()
+#svm = SVM(probability=probability)
+svm = SVM()
 
 positive_examples = ytr.sum()
 if positive_examples>nfolds:
@@ -41,7 +46,8 @@ if isinstance(svm, GridSearchCV):
 
 # evaluation of results
 print('computing the cross-val score')
-f1scores = cross_val_score(svm, Xtr, ytr, cv=nfolds, n_jobs=-1, scoring=make_scorer(f1_score))
+# f1scores = cross_val_score(svm, Xtr, ytr, cv=nfolds, n_jobs=-1, scoring=make_scorer(f1_score))
+f1scores = svm.best_score_
 f1_mean, f1_std = f1scores.mean(), f1scores.std()
 print('F1-measure={:.3f} (+-{:.3f})\n'.format(f1_mean, f1_std))
 
