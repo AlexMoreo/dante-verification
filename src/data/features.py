@@ -124,7 +124,7 @@ def _features_Mendenhall(documents, upto=23):
     return np.array(features)
 
 
-def _features_tfidf(documents, tfidf_vectorizer=None, min_df = 1):
+def _features_tfidf(documents, tfidf_vectorizer=None, min_df = 1, ngrams=(1,1)):
     """
     Extract features as tfidf matrix extracted from the documents
     :param documents: a list where each element is the text (string) of a document
@@ -132,7 +132,7 @@ def _features_tfidf(documents, tfidf_vectorizer=None, min_df = 1):
     distinct words; and V is the TfidfVectorizer already fit
     """
     if tfidf_vectorizer is None:
-        tfidf_vectorizer = TfidfVectorizer(sublinear_tf=True, min_df=min_df)
+        tfidf_vectorizer = TfidfVectorizer(sublinear_tf=True, min_df=min_df, ngram_range=ngrams)
         tfidf_vectorizer.fit(documents)
 
     features = tfidf_vectorizer.transform(documents)
@@ -179,6 +179,7 @@ class FeatureExtractor:
                  features_Mendenhall=True,
                  tfidf=False,
                  tfidf_feat_selection_ratio=1.,
+                 wordngrams=(1,1),
                  ngrams=False,
                  ns=[4, 5],
                  split_documents=False,
@@ -209,6 +210,7 @@ class FeatureExtractor:
         self.features_Mendenhall = features_Mendenhall
         self.tfidf = tfidf
         self.tfidf_feat_selection_ratio = tfidf_feat_selection_ratio
+        self.wordngrams = wordngrams
         self.ngrams = ngrams
         self.ns = ns
         self.split_documents = split_documents
@@ -248,7 +250,7 @@ class FeatureExtractor:
 
         # sparse feature extraction functions
         if self.tfidf:
-            X_features, vectorizer = _features_tfidf(documents)
+            X_features, vectorizer = _features_tfidf(documents, ngrams=self.wordngrams)
             self.tfidf_vectorizer = vectorizer
 
             if self.tfidf_feat_selection_ratio < 1.:
@@ -260,7 +262,7 @@ class FeatureExtractor:
             self._print('adding tfidf words features: {} features'.format(X.shape[1]))
 
         if self.ngrams:
-            X_features, vectorizer = _features_ngrams(documents, self.ns, min_df=5 * self.window_size)
+            X_features, vectorizer = _features_ngrams(documents, self.ns, min_df=5)
             self.ngrams_vectorizer = vectorizer
 
             if self.tfidf_feat_selection_ratio < 1.:
@@ -269,7 +271,7 @@ class FeatureExtractor:
                 self.feat_sel_ngrams = feat_sel
 
             X = self._addfeatures(_tocsr(X), X_features)
-            self._print('adding ngrams words features: {} features'.format(X.shape[1]))
+            self._print('adding ngrams character features: {} features'.format(X.shape[1]))
 
         # print summary
         if self.verbose:

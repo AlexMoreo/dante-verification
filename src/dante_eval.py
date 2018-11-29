@@ -18,7 +18,8 @@ positive, negative, ep1_text, ep2_text = load_texts(path)
 
 feature_extractor = FeatureExtractor(function_words_freq='latin', features_Mendenhall=True,
                                      tfidf=False, tfidf_feat_selection_ratio=0.1,
-                                     ngrams=True, ns=[3,4,5],
+                                     wordngrams=(4,5),
+                                     ngrams=True, ns=[4,5],
                                      split_documents=True,
                                      split_policy=split_by_sentences,
                                      window_size=3,

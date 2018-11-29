@@ -54,15 +54,6 @@ def doall(problem,pos,neg,test,truth):
     print('[End]{}'.format(problem))
     return problem, probability, prediction, truth
 
-    # print('{}-->{:.3f} decision={}'.format(problem, probability, prediction))
-    # print('pred={} truth={}'.format(prediction, truth))
-    #
-    # y_prob.append(probability)
-    # y_pred.append(prediction)
-    # y_true.append(truth)
-    #
-    # acc_auc = evaluation(y_pred, y_prob, y_true)
-
 
 
 if __name__ == '__main__':
@@ -74,7 +65,7 @@ if __name__ == '__main__':
         outcomes = Parallel(n_jobs=-1)(delayed(doall)(problem,pos,neg,test,truth) for problem,pos,neg,test,truth in TaskGenerator(request))
         y_pred, y_prob, y_true = [], [], []
         for problem, probability, prediction, truth in outcomes:
-            fo.write('{} {:.3f}\n'.format(problem, probability))
+            fo.write('{} {}\n'.format(problem, probability))
             y_pred.append(prediction)
             y_prob.append(probability)
             y_true.append(truth)
