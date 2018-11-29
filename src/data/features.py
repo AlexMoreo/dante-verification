@@ -1,56 +1,31 @@
 import nltk
-import re
 import numpy as np
-import os
-from os.path import join
-from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import chi2
-from sklearn.metrics import f1_score
-from sklearn.metrics import make_scorer
-from sklearn.model_selection import GridSearchCV
-from sklearn.model_selection import cross_val_score
 from sklearn.preprocessing import normalize
 from scipy.sparse import hstack, csr_matrix, issparse
 from collections import Counter
+from nltk.corpus import stopwords
 
 
-function_words = ['et', 'in', 'de', 'ad', 'ut', 'cum', 'non', 'per', 'a', 'que', 'ex','sed',
-                  'quia', 'nam', 'sic', 'si', 'ab', 'etiam', 'idest', 'nec', 'vel', 'atque',
-                  'scilicet', 'sicut', 'hec', 'vero', 'tamen', 'dum', 'propter', 'pro', 'enim',
-                  'ita', 'autem', 'inter', 'unde', 'sub', 'tam', 'ibi', 'ideo', 'ergo', 'post',
-                  'iam', 'seu', 'inde', 'tantum', 'sive', 'quomodo', 'ubi', 'ac', 'ob', 'igitur',
-                  'tunc', 'nisi', 'quasi', 'quantum', 'aut', 'usque', 'bene', 'ne', 'ante', 
-                  'nunc', 'magis', 'sine', 'circa', 'apud', 'contra', 'adhuc', 'satis', 'semper',
-                  'super', 'adeo', 'tandem', 'tanquam', 'quoniam', 'quin', 'quemadmodum', 'supra']
 
-nfolds = 5
+latin_function_words = ['et', 'in', 'de', 'ad', 'ut', 'cum', 'non', 'per', 'a', 'que', 'ex','sed',
+      'quia', 'nam', 'sic', 'si', 'ab', 'etiam', 'idest', 'nec', 'vel', 'atque',
+      'scilicet', 'sicut', 'hec', 'vero', 'tamen', 'dum', 'propter', 'pro', 'enim',
+      'ita', 'autem', 'inter', 'unde', 'sub', 'tam', 'ibi', 'ideo', 'ergo', 'post',
+      'iam', 'seu', 'inde', 'tantum', 'sive', 'quomodo', 'ubi', 'ac', 'ob', 'igitur',
+      'tunc', 'nisi', 'quasi', 'quantum', 'aut', 'usque', 'bene', 'ne', 'ante',
+      'nunc', 'magis', 'sine', 'circa', 'apud', 'contra', 'adhuc', 'satis', 'semper',
+      'super', 'adeo', 'tandem', 'tanquam', 'quoniam', 'quin', 'quemadmodum', 'supra']
 
-# ------------------------------------------------------------------------
-# document loading routine
-# ------------------------------------------------------------------------
-def _load_texts(path):
-    # load the training data (all documents but Epistolas 1 and 2)
-    documents = []
-    authors   = []
-    ndocs=0
-    for file in os.listdir(path):
-        if file.startswith('EpistolaXIII_'): continue
-        file_clean = file.replace('.txt','')
-        author, textname = file_clean.split('_')[0],file_clean.split('_')[1]
-        text = open(join(path,file), encoding= "utf8").read()
-
-        documents.append(text)
-        authors.append(author)
-        ndocs+=1
-
-    # load the test data (Epistolas 1 and 2)
-    ep1_text = open(join(path, 'EpistolaXIII_1.txt'), encoding="utf8").read()
-    ep2_text = open(join(path, 'EpistolaXIII_2.txt'), encoding="utf8").read()
-
-    return documents, authors, ep1_text, ep2_text
-
+def get_function_words(lang):
+    if lang=='latin':
+        return latin_function_words
+    elif lang in ['english','spanish']:
+        return stopwords.words(lang)
+    else:
+        raise ValueError('{} not in scope!'.format(lang))
 
 # ------------------------------------------------------------------------
 # split policies
@@ -78,8 +53,13 @@ def split_by_sentences(text):
 
 def windows(text_fragments, window_size):
     new_fragments = []
-    for i in range(len(text_fragments)-window_size+1):
-        new_fragments.append(' '.join(text_fragments[i:i+window_size]))
+    nbatches = len(text_fragments) // window_size
+    if len(text_fragments) % window_size > 0:
+        nbatches+=1
+    # for i in range(len(text_fragments)-window_size+1):
+    for i in range(nbatches):
+        offset = i*window_size
+        new_fragments.append(' '.join(text_fragments[offset:offset+window_size]))
     return new_fragments
 
 def splitter(documents, authors=None, split_policy=split_by_sentences, window_size=1):
@@ -100,14 +80,14 @@ def splitter(documents, authors=None, split_policy=split_by_sentences, window_si
 # ------------------------------------------------------------------------
 # feature extraction methods
 # ------------------------------------------------------------------------
-# TODO: implement other feature extraction methods
-def _features_function_words_freq(documents):
+def _features_function_words_freq(documents, lang):
     """
     Extract features as the frequency (x1000) of the function words used in the documents
     :param documents: a list where each element is the text (string) of a document
     :return: a np.array of shape (D,F) where D is len(documents) and F is len(function_words)
     """
     features = []
+    function_words = get_function_words(lang)
 
     for text in documents:
         unmod_tokens = nltk.word_tokenize(text)
@@ -160,9 +140,9 @@ def _features_tfidf(documents, tfidf_vectorizer=None, min_df = 1):
     return features, tfidf_vectorizer
 
 
-def _features_ngrams(documents, ns=[4, 5], tfidf_vectorizer=None, min_df = 5):
+def _features_ngrams(documents, ns=[4, 5], ngrams_vectorizer=None, min_df = 5):
     doc_ngrams = ngrams_extractor(documents, ns)
-    return _features_tfidf(doc_ngrams, tfidf_vectorizer=tfidf_vectorizer, min_df = min_df)
+    return _features_tfidf(doc_ngrams, tfidf_vectorizer=ngrams_vectorizer, min_df = min_df)
 
 
 def ngrams_extractor(documents, ns=[4, 5]):
@@ -171,7 +151,7 @@ def ngrams_extractor(documents, ns=[4, 5]):
 
     list_ngrams = []
     for doc in documents:
-        doc = re.sub(r'[^\w\s]','', doc.strip())
+        # doc = re.sub(r'[^\w\s]','', doc.strip())
         doc_ngrams = []
         for ni in ns:
             doc_ngrams.extend([doc[i:i + ni].replace(' ','_') for i in range(len(doc) - ni + 1)])
@@ -181,23 +161,21 @@ def ngrams_extractor(documents, ns=[4, 5]):
     return list_ngrams
 
 
-def _feature_selection(X, y, EP1, EP2, tfidf_feat_selection_ratio):
+def _feature_selection(X, y, tfidf_feat_selection_ratio):
     nF = X.shape[1]
     num_feats = int(tfidf_feat_selection_ratio * nF)
     feature_selector = SelectKBest(chi2, k=num_feats)
     X = feature_selector.fit_transform(X, y)
-    EP1 = feature_selector.transform(EP1)
-    EP2 = feature_selector.transform(EP2)
-    return X,EP1,EP2
-
+    return X, feature_selector
 
 def _tocsr(X):
     return X if issparse(X) else csr_matrix(X)
 
-class DocumentLoader:
+
+class FeatureExtractor:
 
     def __init__(self,
-                 function_words_freq=True,
+                 function_words_freq=None,
                  features_Mendenhall=True,
                  tfidf=False,
                  tfidf_feat_selection_ratio=1.,
@@ -240,87 +218,123 @@ class DocumentLoader:
         self.verbose = verbose
 
 
-    def load_documents(self, path):
-        documents, authors, ep1_text, ep2_text = _load_texts(path)
-        ep1,ep2 = [ep1_text],[ep2_text]
-        n_original_docs=len(documents)
+    def fit(self, positives, negatives):
+        documents = positives + negatives
+        authors = [1]*len(positives) + [0]*len(negatives)
+        n_original_docs = len(documents)
 
         if self.split_documents:
-            doc_fragments, authors_fragments = splitter(documents, authors, split_policy=self.split_policy, window_size=self.window_size)
+            doc_fragments, authors_fragments = splitter(documents, authors,
+                                                        split_policy=self.split_policy,
+                                                        window_size=self.window_size)
             documents.extend(doc_fragments)
             authors.extend(authors_fragments)
-
-            ep1.extend(splitter(ep1, split_policy=self.split_policy))
-            ep2.extend(splitter(ep2, split_policy=self.split_policy))
             self._print('splitting documents: {} documents'.format(len(doc_fragments)))
 
         # represent the target vector
-        y = np.array([(1 if author == "Dante" else 0) for author in authors])
+        y = np.array(authors)
 
         # initialize the document-by-feature vector
         X = np.empty((len(documents), 0))
-        EP1 = np.empty((len(ep1), 0))
-        EP2 = np.empty((len(ep2), 0))
 
         # dense feature extraction functions
         if self.function_words_freq:
-            X = self._addfeatures(X, _features_function_words_freq(documents))
-            EP1 = self._addfeatures(EP1, _features_function_words_freq(ep1))
-            EP2 = self._addfeatures(EP2, _features_function_words_freq(ep2))
+            X = self._addfeatures(X, _features_function_words_freq(documents, self.function_words_freq))
             self._print('adding function words features: {} features'.format(X.shape[1]))
 
         if self.features_Mendenhall:
             X = self._addfeatures(X, _features_Mendenhall(documents))
-            EP1 = self._addfeatures(EP1, _features_Mendenhall(ep1))
-            EP2 = self._addfeatures(EP2, _features_Mendenhall(ep2))
             self._print('adding Mendenhall words features: {} features'.format(X.shape[1]))
-
 
         # sparse feature extraction functions
         if self.tfidf:
             X_features, vectorizer = _features_tfidf(documents)
-            ep1_features, _ = _features_tfidf(ep1, vectorizer)
-            ep2_features, _ = _features_tfidf(ep2, vectorizer)
+            self.tfidf_vectorizer = vectorizer
 
             if self.tfidf_feat_selection_ratio < 1.:
                 if self.verbose: print('feature selection')
-                X_features, ep1_features, ep2_features = \
-                    _feature_selection(X_features, y, ep1_features, ep2_features, self.tfidf_feat_selection_ratio)
+                X_features, feat_sel = _feature_selection(X_features, y, self.tfidf_feat_selection_ratio)
+                self.feat_sel_tfidf = feat_sel
 
-            X   = self._addfeatures(_tocsr(X), X_features)
-            EP1 = self._addfeatures(_tocsr(EP1), ep1_features)
-            EP2 = self._addfeatures(_tocsr(EP2), ep2_features)
+            X = self._addfeatures(_tocsr(X), X_features)
             self._print('adding tfidf words features: {} features'.format(X.shape[1]))
 
         if self.ngrams:
-            X_features, vectorizer = _features_ngrams(documents, self.ns, min_df=5*self.window_size)
-            ep1_features, _ = _features_ngrams(ep1, self.ns, tfidf_vectorizer=vectorizer, min_df=5*self.window_size)
-            ep2_features, _ = _features_ngrams(ep2, self.ns, tfidf_vectorizer=vectorizer, min_df=5*self.window_size)
+            X_features, vectorizer = _features_ngrams(documents, self.ns, min_df=5 * self.window_size)
+            self.ngrams_vectorizer = vectorizer
 
             if self.tfidf_feat_selection_ratio < 1.:
                 if self.verbose: print('feature selection')
-                X_features, ep1_features, ep2_features = \
-                    _feature_selection(X_features, y, ep1_features, ep2_features, self.tfidf_feat_selection_ratio)
+                X_features, feat_sel = _feature_selection(X_features, y, self.tfidf_feat_selection_ratio)
+                self.feat_sel_ngrams = feat_sel
 
-            X   = self._addfeatures(_tocsr(X), X_features)
-            EP1 = self._addfeatures(_tocsr(EP1), ep1_features)
-            EP2 = self._addfeatures(_tocsr(EP2), ep2_features)
+            X = self._addfeatures(_tocsr(X), X_features)
             self._print('adding ngrams words features: {} features'.format(X.shape[1]))
-
 
         # print summary
         if self.verbose:
-            print('load_documents: function_words_freq={} features_Mendenhall={} tfidf={}, split_documents={}, split_policy={}'
-                  .format(self.function_words_freq, self.features_Mendenhall, self.tfidf, self.split_documents,
-                          self.split_policy.__name__))
+            print(
+                'load_documents: function_words_freq={} features_Mendenhall={} tfidf={}, split_documents={}, split_policy={}'
+                .format(self.function_words_freq, self.features_Mendenhall, self.tfidf, self.split_documents,
+                        self.split_policy.__name__))
             print('number of training (full) documents: {}'.format(n_original_docs))
             print('X shape (#documents,#features): {}'.format(X.shape))
-            print('y prevalence: {:.2f}%'.format(y.mean()*100))
-            print('Epistola 1 shape:', EP1.shape)
-            print('Epistola 2 shape:', EP2.shape)
+            print('y prevalence: {:.2f}%'.format(y.mean() * 100))
             print()
 
-        return X, y, EP1, EP2
+        return X, y
+
+
+    def transform(self, test):
+        test = [test]
+
+        if self.split_documents:
+            test.extend(splitter(test, split_policy=self.split_policy))
+
+        # initialize the document-by-feature vector
+        TEST = np.empty((len(test), 0))
+
+        # dense feature extraction functions
+        if self.function_words_freq:
+            TEST = self._addfeatures(TEST, _features_function_words_freq(test, self.function_words_freq))
+            self._print('adding function words features: {} features'.format(TEST.shape[1]))
+
+        if self.features_Mendenhall:
+            TEST = self._addfeatures(TEST, _features_Mendenhall(test))
+            self._print('adding Mendenhall words features: {} features'.format(TEST.shape[1]))
+
+        # sparse feature extraction functions
+        if self.tfidf:
+            ep1_features, _ = _features_tfidf(test, self.tfidf_vectorizer)
+
+            if self.tfidf_feat_selection_ratio < 1.:
+                if self.verbose: print('feature selection')
+                ep1_features = self.feat_sel_tfidf.transform(ep1_features)
+
+            TEST = self._addfeatures(_tocsr(TEST), ep1_features)
+            self._print('adding tfidf words features: {} features'.format(TEST.shape[1]))
+
+        if self.ngrams:
+            ep1_features, _ = _features_ngrams(test, self.ns, ngrams_vectorizer=self.ngrams_vectorizer, min_df=5 * self.window_size)
+
+            if self.tfidf_feat_selection_ratio < 1.:
+                if self.verbose: print('feature selection')
+                ep1_features = self.feat_sel_ngrams.transform(ep1_features)
+
+            TEST = self._addfeatures(_tocsr(TEST), ep1_features)
+            self._print('adding ngrams words features: {} features'.format(TEST.shape[1]))
+
+        # print summary
+        if self.verbose:
+            print(
+                'load_documents: function_words_freq={} features_Mendenhall={} tfidf={}, split_documents={}, split_policy={}'
+                .format(self.function_words_freq, self.features_Mendenhall, self.tfidf, self.split_documents,
+                        self.split_policy.__name__))
+            print('Epistola 1 shape:', TEST.shape)
+            print()
+
+        return TEST
+
 
     def _addfeatures(self, X, F):
         # plt.matshow(F[:25])
