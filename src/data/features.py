@@ -5,7 +5,7 @@ from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import chi2
 from sklearn.preprocessing import normalize
 from scipy.sparse import hstack, csr_matrix, issparse
-from collections import Counter
+import collections
 from nltk.corpus import stopwords
 
 
@@ -26,6 +26,17 @@ def get_function_words(lang):
         return stopwords.words(lang)
     else:
         raise ValueError('{} not in scope!'.format(lang))
+
+
+latin_conjugations = ['abat','emus', 'imini'] # TODO: fill
+
+def get_conjugations(lang):
+    if lang == 'latin':
+        print('WARNING, INCOMPLETE!\n'+'='*80)
+        return latin_conjugations
+    else:
+        raise ValueError('conjugations for languages other than latin are not yet supported')
+
 
 # ------------------------------------------------------------------------
 # split policies
@@ -77,6 +88,12 @@ def splitter(documents, authors=None, split_policy=split_by_sentences, window_si
 
     return fragments
 
+
+def tokenize(text):
+    unmod_tokens = nltk.word_tokenize(text)
+    return ([token.lower() for token in unmod_tokens if any(char.isalpha() for char in token)])
+
+
 # ------------------------------------------------------------------------
 # feature extraction methods
 # ------------------------------------------------------------------------
@@ -90,13 +107,28 @@ def _features_function_words_freq(documents, lang):
     function_words = get_function_words(lang)
 
     for text in documents:
-        unmod_tokens = nltk.word_tokenize(text)
-        mod_tokens = ([token.lower() for token in unmod_tokens if any(char.isalpha() for char in token)])
+        mod_tokens = tokenize(text)
         freqs = nltk.FreqDist(mod_tokens)
-
         nwords = len(mod_tokens)
         funct_words_freq = [1000. * freqs[function_word] / nwords for function_word in function_words]
         features.append(funct_words_freq)
+
+    return np.array(features)
+
+
+def _features_conjugations_freq(documents, lang):
+    features = []
+    conjugations = get_conjugations(lang)
+
+    for text in documents:
+        mod_tokens = tokenize(text)
+        conjugation_tokens = []
+        for conjugation in conjugations:
+            conjugation_tokens.extend([conjugation for token in mod_tokens if token.endswith(conjugation) and len(token)>len(conjugation)])
+        freqs = nltk.FreqDist(conjugation_tokens)
+        nwords = len(mod_tokens)
+        conjugation_freq = [1000. * freqs[conjugation] / nwords for conjugation in conjugations]
+        features.append(conjugation_freq)
 
     return np.array(features)
 
@@ -118,7 +150,7 @@ def _features_Mendenhall(documents, upto=23):
 
         tokens_len = [len(token) for token in mod_tokens]
 
-        count = Counter(tokens_len)
+        count = collections.Counter(tokens_len)
         features.append([1000.*count[i]/nwords for i in range(1,upto)])
 
     return np.array(features)
@@ -176,6 +208,7 @@ class FeatureExtractor:
 
     def __init__(self,
                  function_words_freq=None,
+                 conjugations_freq=None,
                  features_Mendenhall=True,
                  tfidf=False,
                  tfidf_feat_selection_ratio=1.,
@@ -207,6 +240,7 @@ class FeatureExtractor:
         split_documents=True) and 2 (similar)
         """
         self.function_words_freq = function_words_freq
+        self.conjugations_freq = conjugations_freq
         self.features_Mendenhall = features_Mendenhall
         self.tfidf = tfidf
         self.tfidf_feat_selection_ratio = tfidf_feat_selection_ratio
@@ -243,6 +277,10 @@ class FeatureExtractor:
         if self.function_words_freq:
             X = self._addfeatures(X, _features_function_words_freq(documents, self.function_words_freq))
             self._print('adding function words features: {} features'.format(X.shape[1]))
+
+        if self.conjugations_freq:
+            X = self._addfeatures(X, _features_conjugations_freq(documents, self.conjugations_freq))
+            self._print('adding conjugation features: {} features'.format(X.shape[1]))
 
         if self.features_Mendenhall:
             X = self._addfeatures(X, _features_Mendenhall(documents))
@@ -287,11 +325,13 @@ class FeatureExtractor:
         return X, y
 
 
-    def transform(self, test):
+    def transform(self, test, return_fragments=False, window_size=-1):
         test = [test]
+        if window_size==-1:
+            window_size = self.window_size
 
         if self.split_documents:
-            test.extend(splitter(test, split_policy=self.split_policy))
+            test.extend(splitter(test, split_policy=self.split_policy, window_size=window_size))
 
         # initialize the document-by-feature vector
         TEST = np.empty((len(test), 0))
@@ -300,6 +340,10 @@ class FeatureExtractor:
         if self.function_words_freq:
             TEST = self._addfeatures(TEST, _features_function_words_freq(test, self.function_words_freq))
             self._print('adding function words features: {} features'.format(TEST.shape[1]))
+
+        if self.conjugations_freq:
+            TEST = self._addfeatures(TEST, _features_conjugations_freq(test, self.conjugations_freq))
+            self._print('adding conjugation features: {} features'.format(TEST.shape[1]))
 
         if self.features_Mendenhall:
             TEST = self._addfeatures(TEST, _features_Mendenhall(test))
@@ -335,7 +379,10 @@ class FeatureExtractor:
             print('Epistola 1 shape:', TEST.shape)
             print()
 
-        return TEST
+        if return_fragments:
+            return TEST, test[1:]
+        else:
+            return TEST
 
 
     def _addfeatures(self, X, F):
@@ -348,6 +395,7 @@ class FeatureExtractor:
             return hstack((X, F))  # sparse
         else:
             return np.hstack((X, F))  # dense
+
 
     def _print(self, msg):
         if self.verbose:

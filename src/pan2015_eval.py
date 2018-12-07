@@ -34,12 +34,13 @@ def doall(problem,pos,neg,test,truth):
     feature_extractor = FeatureExtractor(function_words_freq=lang,
                                          features_Mendenhall=True,
                                          tfidf=False, tfidf_feat_selection_ratio=0.1,
-                                         ngrams=True, ns=[4, 5],
+                                         ngrams=True, ns=[3, 4, 5],
                                          split_documents=False,
                                          normalize_features=True,
                                          verbose=True)
 
-    method = AuthorshipVerificator(nfolds=3, estimator=LogisticRegression)
+    # method = AuthorshipVerificator(nfolds=3, estimator=LogisticRegression)
+    method = AuthorshipVerificator(nfolds=3, estimator=LinearSVC)
 
     X, y = feature_extractor.fit(pos, neg)
     test = feature_extractor.transform(test)
@@ -57,7 +58,7 @@ def doall(problem,pos,neg,test,truth):
 
 
 if __name__ == '__main__':
-    split = 'test'
+    split = 'train'
     lang = 'spanish'
     request = fetch_PAN2015(split, lang=lang)
 
