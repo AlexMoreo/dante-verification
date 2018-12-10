@@ -28,11 +28,30 @@ def get_function_words(lang):
         raise ValueError('{} not in scope!'.format(lang))
 
 
-latin_conjugations = ['abat','emus', 'imini'] # TODO: fill
+latin_conjugations = ['o', 'eo', 'io', 'as', 'es', 'is', 'at', 'et', 'it', 'amus', 'emus', 'imus', 'atis', 'etis', 'itis',
+                      'ant', 'ent', 'unt', 'iunt', 'or', 'eor', 'ior', 'aris', 'eris', 'iris', 'atur', 'etur', 'itur', 'amur',
+                      'emur', 'imur', 'amini', 'emini', 'imini', 'antur', 'entur', 'untur', 'iuntur', 'abam', 'ebam', 'iebam',
+                      'abas', 'ebas', 'iebas', 'abat', 'ebat', 'iebat', 'abamus', 'ebamus', 'iebamus', 'abatis', 'ebatis', 'iebatis',
+                      'abant', 'ebant', 'iebant', 'abar', 'ebar', 'iebar', 'abaris', 'ebaris', 'iebaris', 'abatur', 'ebatur', 'iebatur',
+                      'abamur', 'ebamur', 'iebamur', 'abamini', 'ebamini', 'iebamini', 'abantur', 'ebantur', 'iebantur', 'abo', 'ebo',
+                      'am', 'iam', 'abis', 'ebis', 'ies', 'abit', 'ebit', 'iet', 'abimus', 'ebimus', 'emus', 'iemus', 'abitis', 'ebitis',
+                      'ietis', 'abunt', 'ebunt', 'ient', 'abor', 'ebor', 'ar', 'iar', 'aberis', 'eberis', 'ieris', 'abitur', 'ebitur',
+                      'ietur', 'abimur', 'ebimur', 'iemur', 'abimini', 'ebimini', 'iemini', 'abuntur', 'ebuntur', 'ientur', 'i', 'isti',
+                      'it', 'imus', 'istis', 'erunt', 'em', 'eam', 'eas', 'ias', 'eat', 'iat', 'eamus', 'iamus', 'eatis', 'iatis', 'eant',
+                      'iant', 'er', 'ear', 'earis', 'iaris', 'eatur', 'iatur', 'eamur', 'iamur', 'eamini', 'iamini', 'eantur', 'iantur',
+                      'rem', 'res', 'ret', 'remus', 'retis', 'rent', 'rer', 'reris', 'retur', 'remur', 'remini', 'rentur', 'erim', 'issem',
+                      'isses', 'isset', 'issemus', 'issetis', 'issent', 'a', 'ate', 'e', 'ete', 'ite', 'are', 'ere', 'ire', 'ato', 'eto',
+                      'ito', 'atote', 'etote', 'itote', 'anto', 'ento', 'unto', 'iunto', 'ator', 'etor', 'itor', 'aminor', 'eminor',
+                      'iminor', 'antor', 'entor', 'untor', 'iuntor', 'ari', 'eri', 'iri', 'andi', 'ando', 'andum', 'andus', 'ande',
+                      'ans', 'antis', 'anti', 'antem', 'antes', 'antium', 'antibus', 'antia',
+                      'esse', 'sum', 'es', 'est', 'sumus', 'estis', 'sunt', 'eram', 'eras', 'erat', 'eramus',
+                      'eratis', 'erant', 'ero', 'eris', 'erit', 'erimus', 'eritis', 'erint',
+                      'sim', 'sis', 'sit', 'simus', 'sitis', 'sint', 'essem', 'esses', 'esset', 'essemus', 'essetis', 'essent',
+                      'fui', 'fuisti', 'fuit', 'fuimus', 'fuistis', 'fuerunt', 'este', 'esto', 'estote', 'sunto']
+
 
 def get_conjugations(lang):
     if lang == 'latin':
-        print('WARNING, INCOMPLETE!\n'+'='*80)
         return latin_conjugations
     else:
         raise ValueError('conjugations for languages other than latin are not yet supported')
