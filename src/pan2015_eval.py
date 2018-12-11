@@ -42,7 +42,7 @@ def doall(problem,pos,neg,test,truth):
     # method = AuthorshipVerificator(nfolds=3, estimator=LogisticRegression)
     method = AuthorshipVerificator(nfolds=3, estimator=LinearSVC)
 
-    X, y = feature_extractor.fit(pos, neg)
+    X, y = feature_extractor.fit_transform(pos, neg)
     test = feature_extractor.transform(test)
 
     method.fit(X, y)

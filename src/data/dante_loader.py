@@ -28,8 +28,7 @@ def remove_citations(doc):
     doc = remove_pattern(doc, start_symbol='{', end_symbol='}', counter=counter)
     return doc
 
-
-def load_texts(path, positive_author='Dante'):
+def load_texts(path, positive_author='Dante', unknown_target=None):
     # load the training data (all documents but Epistolas 1 and 2)
     positive,negative = [],[]
     authors   = []
@@ -49,10 +48,32 @@ def load_texts(path, positive_author='Dante'):
         ndocs+=1
 
     # load the test data (Epistolas 1 and 2)
-    ep1_text = open(join(path, 'EpistolaXIII_1.txt'), encoding="utf8").read()
-    ep2_text = open(join(path, 'EpistolaXIII_2.txt'), encoding="utf8").read()
-    ep1_text = remove_citations(ep1_text)
-    ep2_text = remove_citations(ep2_text)
+    if unknown_target:
+        unknown = open(join(path, unknown_target), encoding="utf8").read()
+        unknown = remove_citations(unknown)
+        return positive, negative, unknown
 
-    return positive, negative, ep1_text, ep2_text
+    else:
+        return positive, negative
+
+
+def list_texts(path):
+    authors   = {}
+    for file in os.listdir(path):
+        if file.startswith('EpistolaXIII_'): continue
+        file_clean = file.replace('.txt','')
+        author, textname = file_clean.split('_')[0],file_clean.split('_')[1]
+        if author not in authors:
+            authors[author] = []
+        authors[author].append(textname)
+
+    author_order = sorted(authors.keys())
+    for author in author_order:
+        print('{}:\t{}'.format(author,', '.join(authors[author])))
+
+
+
+
+
+list_texts('../../testi_2')
 

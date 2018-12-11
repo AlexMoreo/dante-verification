@@ -273,7 +273,7 @@ class FeatureExtractor:
         self.verbose = verbose
 
 
-    def fit(self, positives, negatives):
+    def fit_transform(self, positives, negatives):
         documents = positives + negatives
         authors = [1]*len(positives) + [0]*len(negatives)
         n_original_docs = len(documents)
