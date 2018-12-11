@@ -75,5 +75,5 @@ def list_texts(path):
 
 
 
-list_texts('../../testi_2')
+
 
