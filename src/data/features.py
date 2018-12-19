@@ -191,18 +191,19 @@ def _features_tfidf(documents, tfidf_vectorizer=None, min_df = 1, ngrams=(1,1)):
     return features, tfidf_vectorizer
 
 
-def _features_ngrams(documents, ns=[4, 5], ngrams_vectorizer=None, min_df = 5):
-    doc_ngrams = ngrams_extractor(documents, ns)
+def _features_ngrams(documents, ns=[4, 5], ngrams_vectorizer=None, min_df = 10, preserve_punctuation=True):
+    doc_ngrams = ngrams_extractor(documents, ns, preserve_punctuation)
     return _features_tfidf(doc_ngrams, tfidf_vectorizer=ngrams_vectorizer, min_df = min_df)
 
 
-def ngrams_extractor(documents, ns=[4, 5]):
+def ngrams_extractor(documents, ns=[4, 5], preserve_punctuation=True):
     if not isinstance(ns, list): ns=[ns]
     ns = sorted(np.unique(ns).tolist())
 
     list_ngrams = []
     for doc in documents:
-        # doc = re.sub(r'[^\w\s]','', doc.strip())
+        if preserve_punctuation==False:
+            doc = ' '.join(tokenize(doc))
         doc_ngrams = []
         for ni in ns:
             doc_ngrams.extend([doc[i:i + ni].replace(' ','_') for i in range(len(doc) - ni + 1)])
@@ -229,11 +230,12 @@ class FeatureExtractor:
                  function_words_freq=None,
                  conjugations_freq=None,
                  features_Mendenhall=True,
-                 tfidf=False,
+                 wordngrams=False,
                  tfidf_feat_selection_ratio=1.,
-                 wordngrams=(1,1),
-                 ngrams=False,
-                 ns=[4, 5],
+                 n_wordngrams=(1, 1),
+                 charngrams=False,
+                 n_charngrams=[4, 5],
+                 preserve_punctuation=True,
                  split_documents=False,
                  split_policy = split_by_endline,
                  normalize_features=True,
@@ -246,7 +248,7 @@ class FeatureExtractor:
         :param path: the path containing the texts, each named as <author>_<text_name>.txt
         :param function_words_freq: add the frequency of function words as features
         :param features_Mendenhall: add the frequencies of the words' lengths as features
-        :param tfidf: add the tfidf as features
+        :param wordngrams: add the tfidf as features
         :param split_documents: whether to split text into smaller documents or not (currenty, the policy is to split by '\n').
         Currently, the fragments resulting from the split are added to the pool of documents (i.e., they do not replace the
         full documents, which are anyway retained).
@@ -261,11 +263,12 @@ class FeatureExtractor:
         self.function_words_freq = function_words_freq
         self.conjugations_freq = conjugations_freq
         self.features_Mendenhall = features_Mendenhall
-        self.tfidf = tfidf
+        self.tfidf = wordngrams
         self.tfidf_feat_selection_ratio = tfidf_feat_selection_ratio
-        self.wordngrams = wordngrams
-        self.ngrams = ngrams
-        self.ns = ns
+        self.wordngrams = n_wordngrams
+        self.ngrams = charngrams
+        self.ns = n_charngrams
+        self.preserve_punctuation = preserve_punctuation
         self.split_documents = split_documents
         self.split_policy = split_policy
         self.normalize_features=normalize_features
@@ -319,7 +322,8 @@ class FeatureExtractor:
             self._print('adding tfidf words features: {} features'.format(X.shape[1]))
 
         if self.ngrams:
-            X_features, vectorizer = _features_ngrams(documents, self.ns, min_df=5)
+            X_features, vectorizer = _features_ngrams(documents, self.ns,
+                                                      preserve_punctuation=self.preserve_punctuation)
             self.ngrams_vectorizer = vectorizer
 
             if self.tfidf_feat_selection_ratio < 1.:
@@ -380,7 +384,8 @@ class FeatureExtractor:
             self._print('adding tfidf words features: {} features'.format(TEST.shape[1]))
 
         if self.ngrams:
-            ep1_features, _ = _features_ngrams(test, self.ns, ngrams_vectorizer=self.ngrams_vectorizer, min_df=5 * self.window_size)
+            ep1_features, _ = _features_ngrams(test, self.ns, ngrams_vectorizer=self.ngrams_vectorizer,
+                                               preserve_punctuation=self.preserve_punctuation)
 
             if self.tfidf_feat_selection_ratio < 1.:
                 if self.verbose: print('feature selection')

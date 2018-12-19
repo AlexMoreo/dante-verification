@@ -33,8 +33,8 @@ def doall(problem,pos,neg,test,truth):
     print('[Start]{}'.format(problem))
     feature_extractor = FeatureExtractor(function_words_freq=lang,
                                          features_Mendenhall=True,
-                                         tfidf=False, tfidf_feat_selection_ratio=0.1,
-                                         ngrams=True, ns=[3, 4, 5],
+                                         wordngrams=False, tfidf_feat_selection_ratio=0.1,
+                                         charngrams=True, n_charngrams=[3, 4, 5],
                                          split_documents=False,
                                          normalize_features=True,
                                          verbose=True)

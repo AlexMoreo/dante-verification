@@ -1,8 +1,7 @@
+from util import disable_sklearn_warnings
 from sklearn.metrics import f1_score
 from sklearn.metrics import make_scorer
 from sklearn.model_selection import GridSearchCV
-
-from util import disable_sklearn_warnings
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import *
 from data.features import *
@@ -60,7 +59,7 @@ class AuthorshipVerificator:
             fragment_predictions = pred[1:]
             print('fragments average {:.3f}, array={}'.format(fragment_predictions.mean(), fragment_predictions))
             return full_doc_prediction, fragment_predictions
-        return full_doc_prediction
+        return full_doc_prediction, None
 
     def predict_proba(self, test, epistola_name=''):
         assert self.probability, 'svm is not calibrated'
@@ -71,7 +70,7 @@ class AuthorshipVerificator:
             fragment_predictions = pred[1:,1]
             print('fragments average {:.3f}, array={}'.format(fragment_predictions.mean(), fragment_predictions))
             return full_doc_prediction, fragment_predictions
-        return full_doc_prediction
+        return full_doc_prediction, None
 
 
 
