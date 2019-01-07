@@ -1,7 +1,8 @@
 from util import disable_sklearn_warnings
 from sklearn.metrics import f1_score
 from sklearn.metrics import make_scorer
-from sklearn.model_selection import GridSearchCV, LeaveOneOut
+from sklearn.model_selection import GridSearchCV, LeaveOneOut, LeaveOneGroupOut, cross_val_score, GroupKFold, KFold, \
+    StratifiedKFold
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import *
 from data.features import *
@@ -29,7 +30,7 @@ def f1(true_labels, predicted_labels):
 class AuthorshipVerificator:
 
     def __init__(self, nfolds=10,
-                 params = {'C': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100, 1000], 'class_weight':['balanced',None]},
+                 params = {'C': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100, 1000], 'class_weight':['balanced']},
                  estimator=SVC):
         self.nfolds = nfolds
         self.params = params
@@ -44,13 +45,16 @@ class AuthorshipVerificator:
             self.probability = True
             self.svm = LogisticRegression()
 
-    def fit(self,X,y):
+    def fit(self,X,y,groups=None):
         if not isinstance(y,np.ndarray): y=np.array(y)
         positive_examples = y.sum()
-        if True or positive_examples >= self.nfolds:
+        if positive_examples >= self.nfolds:
             print('optimizing {}'.format(self.svm.__class__.__name__))
-            self.estimator = GridSearchCV(self.svm, param_grid=self.params, cv=LeaveOneOut(), scoring=make_scorer(f1), n_jobs=-1, verbose=10)
-            # self.estimator = GridSearchCV(self.svm, param_grid=self.params, cv=self.nfolds, scoring=make_scorer(f1), n_jobs=-1, verbose=10)
+            # if groups is None or len(np.unique(groups[y==1])):
+            folds = list(StratifiedKFold(n_splits=self.nfolds).split(X, y))
+            # folds = list(GroupKFold(n_splits=self.nfolds).split(X,y,groups))
+
+            self.estimator = GridSearchCV(self.svm, param_grid=self.params, cv=folds, scoring=make_scorer(f1), n_jobs=-1)
         else:
             self.estimator = self.svm
 
@@ -62,8 +66,27 @@ class AuthorshipVerificator:
             f1scores = self.estimator.best_score_
             f1_mean, f1_std = f1scores.mean(), f1scores.std()
             print('F1-measure={:.3f} (+-{:.3f} cv={})\n'.format(f1_mean, f1_std, f1scores))
+            self.estimator = self.estimator.best_estimator_
 
         return self
+
+    def leave_one_out(self, X, y, groups=None, test_lowest_index_only=True):
+
+        if groups is None:
+            print('Computing LOO without groups')
+            folds = list(LeaveOneOut().split(X,y))
+        else:
+            print('Computing LOO with groups')
+            logo = LeaveOneGroupOut()
+            folds=list(logo.split(X,y,groups))
+            if test_lowest_index_only:
+                print('ignoring fragments')
+                folds = [(train, np.min(test, keepdims=True)) for train, test in folds]
+
+        scores = cross_val_score(self.estimator, X, y, cv=folds, scoring=make_scorer(f1), n_jobs=-1)
+        print(scores)
+
+        return scores.mean(), scores.std()
 
     def predict(self, test, epistola_name=''):
         pred = self.estimator.predict(test)

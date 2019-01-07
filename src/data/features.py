@@ -49,6 +49,10 @@ latin_conjugations = ['o', 'eo', 'io', 'as', 'es', 'is', 'at', 'et', 'it', 'amus
                       'sim', 'sis', 'sit', 'simus', 'sitis', 'sint', 'essem', 'esses', 'esset', 'essemus', 'essetis', 'essent',
                       'fui', 'fuisti', 'fuit', 'fuimus', 'fuistis', 'fuerunt', 'este', 'esto', 'estote', 'sunto']
 
+spanish_conjugations = ['o','as','a','amos','áis','an','es','e','emos','éis','en','imos','ís','guir','ger','gir',
+                        'ar','er','ir','é','aste','ó','asteis','aron','í','iste','ió','isteis','ieron',
+                        'aba', 'abas', 'ábamos', 'aban', 'ía', 'ías', 'íamos', 'íais', 'ían', 'ás','á',
+                        'án','estoy','estás','está','estamos','estáis','están']
 
 def get_conjugations(lang):
     if lang == 'latin':
@@ -95,17 +99,19 @@ def windows(text_fragments, window_size):
 def splitter(documents, authors=None, split_policy=split_by_sentences, window_size=1):
     fragments = []
     authors_fragments = []
+    groups = []
     for i, text in enumerate(documents):
         text_fragments = split_policy(text)
         text_fragments = windows(text_fragments, window_size=window_size)
         fragments.extend(text_fragments)
+        groups.extend([i]*len(text_fragments))
         if authors is not None:
             authors_fragments.extend([authors[i]] * len(text_fragments))
 
     if authors is not None:
-        return fragments, authors_fragments
+        return fragments, authors_fragments, groups
 
-    return fragments
+    return fragments, groups
 
 
 def tokenize(text):
@@ -280,17 +286,20 @@ class FeatureExtractor:
         documents = positives + negatives
         authors = [1]*len(positives) + [0]*len(negatives)
         n_original_docs = len(documents)
+        groups = list(range(n_original_docs))
 
         if self.split_documents:
-            doc_fragments, authors_fragments = splitter(documents, authors,
+            doc_fragments, authors_fragments, groups_fragments = splitter(documents, authors,
                                                         split_policy=self.split_policy,
                                                         window_size=self.window_size)
             documents.extend(doc_fragments)
             authors.extend(authors_fragments)
+            groups.extend(groups_fragments)
             self._print('splitting documents: {} documents'.format(len(doc_fragments)))
 
         # represent the target vector
         y = np.array(authors)
+        groups = np.array(groups)
 
         # initialize the document-by-feature vector
         X = np.empty((len(documents), 0))
@@ -345,7 +354,7 @@ class FeatureExtractor:
             print('y prevalence: {}/{} {:.2f}%'.format(y.sum(),len(y),y.mean() * 100))
             print()
 
-        return X, y
+        return X, y, groups
 
 
     def transform(self, test, return_fragments=False, window_size=-1):
@@ -354,7 +363,8 @@ class FeatureExtractor:
             window_size = self.window_size
 
         if self.split_documents:
-            test.extend(splitter(test, split_policy=self.split_policy, window_size=window_size))
+            tests, _ = splitter(test, split_policy=self.split_policy, window_size=window_size)
+            test.extend(tests)
 
         # initialize the document-by-feature vector
         TEST = np.empty((len(test), 0))
