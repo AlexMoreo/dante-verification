@@ -27,7 +27,7 @@ for epistola in [1,2]:
                                          tfidf_feat_selection_ratio=0.1,
                                          wordngrams=False, n_wordngrams=(1, 2),
                                          charngrams=True, n_charngrams=(3, 4, 5), preserve_punctuation=False,
-                                         split_documents=True, split_policy=split_by_sentences, window_size=3,
+                                         split_documents=False, split_policy=split_by_sentences, window_size=3,
                                          normalize_features=True)
 
     Xtr,ytr = feature_extractor.fit_transform(positive, negative)
@@ -41,7 +41,7 @@ for epistola in [1,2]:
     title = 'Epistola {}'.format('I' if epistola==1 else 'II')
     av.predict(ep, title)
     fulldoc_prob, fragment_probs = av.predict_proba(ep, title)
-    color(path='../dante_color/epistola{}.html'.format(epistola), texts=ep_fragments, probabilities=fragment_probs, title=title)
+    # color(path='../dante_color/epistola{}.html'.format(epistola), texts=ep_fragments, probabilities=fragment_probs, title=title)
 
     param = 'All'
     # with open('features{}.csv'.format(epistola), 'at') as fo:
