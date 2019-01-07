@@ -17,7 +17,7 @@ for epistola in [1,2]:
     print('='*80)
     path = '../testi_{}'.format(epistola)
     if epistola==2:
-        path+='_with_GuidoDaPisa'
+        path+='_without_GuidoDaPisa'
 
     positive, negative, ep_text = load_texts(path, unknown_target='EpistolaXIII_{}.txt'.format(epistola))
 
@@ -26,7 +26,7 @@ for epistola in [1,2]:
                                          features_Mendenhall=True,
                                          tfidf_feat_selection_ratio=0.1,
                                          wordngrams=False, n_wordngrams=(1, 2),
-                                         charngrams=True, n_charngrams=(3, 4, 5), preserve_punctuation=False,
+                                         charngrams=True, n_charngrams=(3, 4, 5), preserve_punctuation=True,
                                          split_documents=True, split_policy=split_by_sentences, window_size=3,
                                          normalize_features=True)
 

@@ -10,14 +10,12 @@ from nltk.corpus import stopwords
 
 
 
-latin_function_words = ['et', 'in', 'de', 'ad', 'ut', 'cum', 'non', 'per', 'a', 'que', 'ex','sed',
-      'quia', 'nam', 'sic', 'si', 'ab', 'etiam', 'idest', 'nec', 'vel', 'atque',
-      'scilicet', 'sicut', 'hec', 'vero', 'tamen', 'dum', 'propter', 'pro', 'enim',
-      'ita', 'autem', 'inter', 'unde', 'sub', 'tam', 'ibi', 'ideo', 'ergo', 'post',
-      'iam', 'seu', 'inde', 'tantum', 'sive', 'quomodo', 'ubi', 'ac', 'ob', 'igitur',
-      'tunc', 'nisi', 'quasi', 'quantum', 'aut', 'usque', 'bene', 'ne', 'ante',
-      'nunc', 'magis', 'sine', 'circa', 'apud', 'contra', 'adhuc', 'satis', 'semper',
-      'super', 'adeo', 'tandem', 'tanquam', 'quoniam', 'quin', 'quemadmodum', 'supra']
+latin_function_words = ['et','in','de','ad','non','ut','cum','per','a','sed','que','quia','ex','sic','si','etiam',
+                        'idest','nam','unde','ab','uel','sicut','ita','enim','scilicet','nec','pro','autem','ibi',
+                        'dum','uero','tamen','inter','ideo','propter','contra','sub','quomodo','ubi','super','iam',
+                        'tam','hec','post','quasi','ergo','inde','e','tunc','atque','ac','sine','nisi','nunc','quando',
+                        'ne','usque','siue','aut','igitur','circa','quidem','tantum','supra','ante','adhuc','seu',
+                        'quantum','apud','olim','statim','satis','ob','quoniam','postea','nunquam']
 
 def get_function_words(lang):
     if lang=='latin':
@@ -28,33 +26,39 @@ def get_function_words(lang):
         raise ValueError('{} not in scope!'.format(lang))
 
 
-latin_conjugations = ['o', 'eo', 'io', 'as', 'es', 'is', 'at', 'et', 'it', 'amus', 'emus', 'imus', 'atis', 'etis', 'itis',
-                      'ant', 'ent', 'unt', 'iunt', 'or', 'eor', 'ior', 'aris', 'eris', 'iris', 'atur', 'etur', 'itur', 'amur',
-                      'emur', 'imur', 'amini', 'emini', 'imini', 'antur', 'entur', 'untur', 'iuntur', 'abam', 'ebam', 'iebam',
-                      'abas', 'ebas', 'iebas', 'abat', 'ebat', 'iebat', 'abamus', 'ebamus', 'iebamus', 'abatis', 'ebatis', 'iebatis',
-                      'abant', 'ebant', 'iebant', 'abar', 'ebar', 'iebar', 'abaris', 'ebaris', 'iebaris', 'abatur', 'ebatur', 'iebatur',
-                      'abamur', 'ebamur', 'iebamur', 'abamini', 'ebamini', 'iebamini', 'abantur', 'ebantur', 'iebantur', 'abo', 'ebo',
-                      'am', 'iam', 'abis', 'ebis', 'ies', 'abit', 'ebit', 'iet', 'abimus', 'ebimus', 'emus', 'iemus', 'abitis', 'ebitis',
-                      'ietis', 'abunt', 'ebunt', 'ient', 'abor', 'ebor', 'ar', 'iar', 'aberis', 'eberis', 'ieris', 'abitur', 'ebitur',
-                      'ietur', 'abimur', 'ebimur', 'iemur', 'abimini', 'ebimini', 'iemini', 'abuntur', 'ebuntur', 'ientur', 'i', 'isti',
-                      'it', 'imus', 'istis', 'erunt', 'em', 'eam', 'eas', 'ias', 'eat', 'iat', 'eamus', 'iamus', 'eatis', 'iatis', 'eant',
-                      'iant', 'er', 'ear', 'earis', 'iaris', 'eatur', 'iatur', 'eamur', 'iamur', 'eamini', 'iamini', 'eantur', 'iantur',
-                      'rem', 'res', 'ret', 'remus', 'retis', 'rent', 'rer', 'reris', 'retur', 'remur', 'remini', 'rentur', 'erim', 'issem',
-                      'isses', 'isset', 'issemus', 'issetis', 'issent', 'a', 'ate', 'e', 'ete', 'ite', 'are', 'ere', 'ire', 'ato', 'eto',
-                      'ito', 'atote', 'etote', 'itote', 'anto', 'ento', 'unto', 'iunto', 'ator', 'etor', 'itor', 'aminor', 'eminor',
-                      'iminor', 'antor', 'entor', 'untor', 'iuntor', 'ari', 'eri', 'iri', 'andi', 'ando', 'andum', 'andus', 'ande',
-                      'ans', 'antis', 'anti', 'antem', 'antes', 'antium', 'antibus', 'antia',
-                      'esse', 'sum', 'es', 'est', 'sumus', 'estis', 'sunt', 'eram', 'eras', 'erat', 'eramus',
-                      'eratis', 'erant', 'ero', 'eris', 'erit', 'erimus', 'eritis', 'erint',
-                      'sim', 'sis', 'sit', 'simus', 'sitis', 'sint', 'essem', 'esses', 'esset', 'essemus', 'essetis', 'essent',
-                      'fui', 'fuisti', 'fuit', 'fuimus', 'fuistis', 'fuerunt', 'este', 'esto', 'estote', 'sunto']
+latin_conjugations = ['o','eo','io','as','es','is','at','et','it','amus','emus','imus','atis','etis','itis',
+                      'ant','ent','unt','iunt','or','eor','ior','aris','eris','iris','atur','etur','itur','amur',
+                      'emur','imur','amini','emini','imini','antur','entur','untur','iuntur','abam','ebam','iebam',
+                      'abas','ebas','iebas','abat','ebat','iebat','abamus','ebamus','iebamus','abatis','ebatis','iebatis',
+                      'abant','ebant','iebant','abar','ebar','iebar','abaris','ebaris','iebaris','abatur','ebatur','iebatur',
+                      'abamur','ebamur','iebamur','abamini','ebamini','iebamini','abantur','ebantur','iebantur','abo','ebo',
+                      'am','iam','abis','ebis','ies','abit','ebit','iet','abimus','ebimus','emus','iemus','abitis','ebitis',
+                      'ietis','abunt','ebunt','ient','abor','ebor','ar','iar','aberis','eberis','ieris','abitur','ebitur',
+                      'ietur','abimur','ebimur','iemur','abimini','ebimini','iemini','abuntur','ebuntur','ientur','i','isti',
+                      'it','imus','istis','erunt','em','eam','eas','ias','eat','iat','eamus','iamus','eatis','iatis','eant',
+                      'iant','er','ear','earis','iaris','eatur','iatur','eamur','iamur','eamini','iamini','eantur','iantur',
+                      'rem','res','ret','remus','retis','rent','rer','reris','retur','remur','remini','rentur','erim','issem',
+                      'isses','isset','issemus','issetis','issent','a','ate','e','ete','ite','are','ere','ire','ato','eto',
+                      'ito','atote','etote','itote','anto','ento','unto','iunto','ator','etor','itor','aminor','eminor',
+                      'iminor','antor','entor','untor','iuntor','ari','eri','iri','andi','ando','andum','andus','ande',
+                      'ans','antis','anti','antem','antes','antium','antibus','antia',
+                      'esse','sum','es','est','sumus','estis','sunt','eram','eras','erat','eramus',
+                      'eratis','erant','ero','eris','erit','erimus','eritis','erint',
+                      'sim','sis','sit','simus','sitis','sint','essem','esses','esset','essemus','essetis','essent',
+                      'fui','fuisti','fuit','fuimus','fuistis','fuerunt','este','esto','estote','sunto']
+
+spanish_conjugations = ['o','as','a','amos','áis','an','es','e','emos','éis','en','imos','ís','guir','ger','gir',
+                        'ar','er','ir','é','aste','ó','asteis','aron','í','iste','ió','isteis','ieron','ás','á',
+                        'án','estoy','estás','está','estamos','estáis','están']
 
 
 def get_conjugations(lang):
     if lang == 'latin':
         return latin_conjugations
+    if lang == 'spanish':
+        return spanish_conjugations
     else:
-        raise ValueError('conjugations for languages other than latin are not yet supported')
+        raise ValueError('conjugations for languages other than latin and spanish are not yet supported')
 
 
 # ------------------------------------------------------------------------
