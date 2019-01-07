@@ -342,7 +342,7 @@ class FeatureExtractor:
                         self.split_policy.__name__))
             print('number of training (full) documents: {}'.format(n_original_docs))
             print('X shape (#documents,#features): {}'.format(X.shape))
-            print('y prevalence: {:.2f}%'.format(y.mean() * 100))
+            print('y prevalence: {}/{} {:.2f}%'.format(y.sum(),len(y),y.mean() * 100))
             print()
 
         return X, y
