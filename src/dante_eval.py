@@ -12,7 +12,7 @@ from util.color_visualization import color
 # TODO: inspect the impact of chi-squared correlations against positive-only (or positive and negative) correlations for feature selection
 # TODO: sentence length (Mendenhall-style) ?
 
-for epistola in [2]:
+for epistola in [1, 2]:
     print('Epistola {}'.format(epistola))
     print('='*80)
     path = '../testi_{}'.format(epistola)
