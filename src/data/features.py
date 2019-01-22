@@ -9,7 +9,6 @@ import collections
 from nltk.corpus import stopwords
 
 
-
 latin_function_words = ['et',  'in',  'de',  'ad',  'non',  'vt', 'cvm', 'per', 'a', 'sed', 'qve', 'qvia', 'ex', 'sic',
                         'si', 'etiam', 'idest', 'nam', 'vnde', 'ab', 'vel', 'sicvt', 'ita', 'enim', 'scilicet', 'nec',
                         'pro', 'avtem', 'ibi',  'dvm', 'vero', 'tamen', 'inter', 'ideo', 'propter', 'contra', 'svb',
@@ -17,15 +16,6 @@ latin_function_words = ['et',  'in',  'de',  'ad',  'non',  'vt', 'cvm', 'per', 
                         'atqve', 'ac', 'sine', 'nisi', 'nvnc', 'qvando', 'ne', 'vsqve', 'sive', 'avt', 'igitvr', 'circa',
                         'qvidem', 'svpra', 'ante', 'adhvc', 'sev' , 'apvd', 'olim', 'statim', 'satis', 'ob', 'qvoniam',
                         'postea', 'nvnqvam']
-
-def get_function_words(lang):
-    if lang=='latin':
-        return latin_function_words
-    elif lang in ['english','spanish']:
-        return stopwords.words(lang)
-    else:
-        raise ValueError('{} not in scope!'.format(lang))
-
 
 latin_conjugations = ['o', 'eo', 'io', 'as', 'es', 'is', 'at', 'et', 'it', 'amvs', 'emvs', 'imvs', 'atis', 'etis',
                       'itis', 'ant', 'ent', 'vnt', 'ivnt', 'or', 'eor', 'ior', 'aris', 'eris', 'iris', 'atvr', 'etvr',
@@ -55,11 +45,22 @@ spanish_conjugations = ['o','as','a','amos','áis','an','es','e','emos','éis','
                         'aba', 'abas', 'ábamos', 'aban', 'ía', 'ías', 'íamos', 'íais', 'ían', 'ás','á',
                         'án','estoy','estás','está','estamos','estáis','están']
 
+
+def get_function_words(lang):
+    if lang=='latin':
+        return latin_function_words
+    elif lang in ['english','spanish']:
+        return stopwords.words(lang)
+    else:
+        raise ValueError('{} not in scope!'.format(lang))
+
 def get_conjugations(lang):
     if lang == 'latin':
         return latin_conjugations
+    elif lang == 'spanish':
+        return spanish_conjugations
     else:
-        raise ValueError('conjugations for languages other than latin are not yet supported')
+        raise ValueError('conjugations for languages other than Latin and Spanish are not yet supported')
 
 
 # ------------------------------------------------------------------------
@@ -411,7 +412,7 @@ class FeatureExtractor:
                 'load_documents: function_words_freq={} features_Mendenhall={} tfidf={}, split_documents={}, split_policy={}'
                 .format(self.function_words_freq, self.features_Mendenhall, self.tfidf, self.split_documents,
                         self.split_policy.__name__))
-            print('Epistola 1 shape:', TEST.shape)
+            print('test shape:', TEST.shape)
             print()
 
         if return_fragments:

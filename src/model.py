@@ -14,23 +14,31 @@ class RandomVerificator:
     def predict(self,test):
         return np.random.rand()
 
-def f1(true_labels, predicted_labels):
-    assert len(true_labels)==len(predicted_labels), "Format not consistent between true and predicted labels."
+def get_counters(true_labels, predicted_labels):
+    assert len(true_labels) == len(predicted_labels), "Format not consistent between true and predicted labels."
     nd = len(true_labels)
-    tp = np.sum(predicted_labels[true_labels==1])
+    tp = np.sum(predicted_labels[true_labels == 1])
     fp = np.sum(predicted_labels[true_labels == 0])
     fn = np.sum(true_labels[predicted_labels == 0])
+    tn = nd - (tp+fp+fn)
+    return tp,fp,fn,tn
+
+def f1_from_counters(tp,fp,fn,tn):
     num = 2.0 * tp
     den = 2.0 * tp + fp + fn
     if den > 0: return num / den
     # we define f1 to be 1 if den==0 since the classifier has correctly classified all instances as negative
     return 1.0
 
+def f1(true_labels, predicted_labels):
+    tp, fp, fn, tn = get_counters(true_labels,predicted_labels)
+    return f1_from_counters(tp, fp, fn, tn )
+
 
 class AuthorshipVerificator:
 
     def __init__(self, nfolds=10,
-                 params = {'C': [0.0001, 0.001, 0.01, 0.1, 1, 10, 100, 1000], 'class_weight':['balanced']},
+                 params = {'C': np.logspace(-4,+4,9), 'class_weight':['balanced',None]},
                  estimator=SVC):
         self.nfolds = nfolds
         self.params = params
@@ -70,7 +78,7 @@ class AuthorshipVerificator:
 
         return self
 
-    def leave_one_out(self, X, y, groups=None, test_lowest_index_only=True):
+    def leave_one_out(self, X, y, groups=None, test_lowest_index_only=True, counters=False):
 
         if groups is None:
             print('Computing LOO without groups')
@@ -85,8 +93,15 @@ class AuthorshipVerificator:
 
         scores = cross_val_score(self.estimator, X, y, cv=folds, scoring=make_scorer(f1), n_jobs=-1)
         print(scores)
-
-        return scores.mean(), scores.std()
+        if counters and test_lowest_index_only:
+            yfull_true = y[:len(folds)]
+            yfull_predict = np.zeros_like(yfull_true)
+            yfull_predict[scores == 1] = yfull_true[scores == 1]
+            yfull_predict[scores != 1] = 1-yfull_true[scores != 1]
+            tp, fp, fn, tn = get_counters(yfull_true, yfull_predict)
+            return scores.mean(), scores.std(), tp, fp, fn, tn
+        else:
+            return scores.mean(), scores.std()
 
     def predict(self, test, epistola_name=''):
         pred = self.estimator.predict(test)

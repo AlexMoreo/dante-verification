@@ -1,7 +1,7 @@
 from sklearn.linear_model import LogisticRegression
 from data.dante_loader import load_texts
 from data.features import *
-from model import AuthorshipVerificator
+from model import AuthorshipVerificator, f1_from_counters
 from sklearn.svm import LinearSVC, SVC
 from util.color_visualization import color
 
@@ -12,14 +12,16 @@ from util.color_visualization import color
 # TODO: inspect the impact of chi-squared correlations against positive-only (or positive and negative) correlations for feature selection
 # TODO: sentence length (Mendenhall-style) ?
 
+
 for epistola in [1, 2]:
+
     print('Epistola {}'.format(epistola))
     print('='*80)
     path = '../testi_{}'.format(epistola)
     if epistola==2:
         path+='_with_GuidoDaPisa'
 
-    positive, negative, ep_text = load_texts(path, unknown_target='EpistolaXIII_{}.txt'.format(epistola))
+    positive, negative, ep_text = load_texts(path, positive_author='Dante', unknown_target='EpistolaXIII_{}.txt'.format(epistola))
     n_full_docs = len(positive) + len(negative)
 
     feature_extractor = FeatureExtractor(function_words_freq='latin',
@@ -27,7 +29,7 @@ for epistola in [1, 2]:
                                          features_Mendenhall=True,
                                          tfidf_feat_selection_ratio=0.1,
                                          wordngrams=False, n_wordngrams=(1, 2),
-                                         charngrams=True, n_charngrams=(3, 4, 5), preserve_punctuation=False,
+                                         charngrams=True, n_charngrams=(2, 3, 4), preserve_punctuation=False,
                                          split_documents=True, split_policy=split_by_sentences, window_size=3,
                                          normalize_features=True)
 
@@ -46,12 +48,14 @@ for epistola in [1, 2]:
     fulldoc_prob, fragment_probs = av.predict_proba(ep, title)
     # color(path='../dante_color/epistola{}.html'.format(epistola), texts=ep_fragments, probabilities=fragment_probs, title=title)
 
-    score_ave, score_std = av.leave_one_out(Xtr, ytr, groups, test_lowest_index_only=False)
-    print('LOO[full-and-fragments]={:.3f} +-{:.5f}'.format(score_ave, score_std))
+    # score_ave, score_std = av.leave_one_out(Xtr, ytr, groups, test_lowest_index_only=False)
+    # print('LOO[full-and-fragments]={:.3f} +-{:.5f}'.format(score_ave, score_std))
 
-    score_ave, score_std = av.leave_one_out(Xtr, ytr, groups, test_lowest_index_only=True)
-    print('LOO[full-docs]={:.3f} +-{:.5f}'.format(score_ave, score_std))
+    score_ave, score_std, tp, fp, fn, tn = av.leave_one_out(Xtr, ytr, groups, test_lowest_index_only=True, counters=True)
+    # print('LOO[full-docs]={:.3f} +-{:.5f}'.format(score_ave, score_std))
+    f1_ = f1_from_counters(tp, fp, fn, tn)
+    print('F1 = {:.3f}'.format(f1_))
 
-    score_ave, score_std = av.leave_one_out(Xtr, ytr, None)
-    print('LOO[w/o groups]={:.3f} +-{:.5f}'.format(score_ave, score_std))
+    # score_ave, score_std = av.leave_one_out(Xtr, ytr, None)
+    # print('LOO[w/o groups]={:.3f} +-{:.5f}'.format(score_ave, score_std))
 

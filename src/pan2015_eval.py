@@ -32,6 +32,7 @@ def evaluation(y_pred, y_prob, y_true):
 def doall(problem,pos,neg,test,truth):
     print('[Start]{}'.format(problem))
     feature_extractor = FeatureExtractor(function_words_freq=lang,
+                                         conjugations_freq=lang,
                                          features_Mendenhall=True,
                                          wordngrams=False, tfidf_feat_selection_ratio=0.1,
                                          charngrams=True, n_charngrams=[3, 4, 5],
