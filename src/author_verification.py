@@ -13,7 +13,7 @@ from util.color_visualization import color
 # TODO: sentence length (Mendenhall-style) ?
 
 
-for epistola in [1, 2]:
+for epistola in [1,2]:
 
     print('Epistola {}'.format(epistola))
     print('='*80)
@@ -27,9 +27,10 @@ for epistola in [1, 2]:
     feature_extractor = FeatureExtractor(function_words_freq='latin',
                                          conjugations_freq='latin',
                                          features_Mendenhall=True,
+                                         features_sentenceLengths=True,
                                          tfidf_feat_selection_ratio=0.1,
                                          wordngrams=False, n_wordngrams=(1, 2),
-                                         charngrams=True, n_charngrams=(2, 3, 4), preserve_punctuation=False,
+                                         charngrams=True, n_charngrams=(3, 4, 5), preserve_punctuation=False,
                                          split_documents=True, split_policy=split_by_sentences, window_size=3,
                                          normalize_features=True)
 
