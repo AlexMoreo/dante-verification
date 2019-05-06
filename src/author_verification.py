@@ -19,7 +19,7 @@ for epistola in [1,2]:
     print('='*80)
     path = '../testi_{}'.format(epistola)
     if epistola==2:
-        path+='_with_GuidoDaPisa'
+        path+='_tutti'
 
     positive, negative, ep_text = load_texts(path, positive_author='Dante', unknown_target='EpistolaXIII_{}.txt'.format(epistola))
     n_full_docs = len(positive) + len(negative)
@@ -29,7 +29,7 @@ for epistola in [1,2]:
                                          features_Mendenhall=True,
                                          features_sentenceLengths=True,
                                          tfidf_feat_selection_ratio=0.1,
-                                         wordngrams=False, n_wordngrams=(1, 2),
+                                         wordngrams=True, n_wordngrams=(1, 2),
                                          charngrams=True, n_charngrams=(3, 4, 5), preserve_punctuation=False,
                                          split_documents=True, split_policy=split_by_sentences, window_size=3,
                                          normalize_features=True)
@@ -47,7 +47,7 @@ for epistola in [1,2]:
     title = 'Epistola {}'.format('I' if epistola==1 else 'II')
     av.predict(ep, title)
     fulldoc_prob, fragment_probs = av.predict_proba(ep, title)
-    # color(path='../dante_color/epistola{}.html'.format(epistola), texts=ep_fragments, probabilities=fragment_probs, title=title)
+    color(path='../dante_color/epistola{}.html'.format(epistola), texts=ep_fragments, probabilities=fragment_probs, title=title)
 
     # score_ave, score_std = av.leave_one_out(Xtr, ytr, groups, test_lowest_index_only=False)
     # print('LOO[full-and-fragments]={:.3f} +-{:.5f}'.format(score_ave, score_std))
