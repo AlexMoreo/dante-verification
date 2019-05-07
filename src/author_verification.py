@@ -13,13 +13,13 @@ from util.color_visualization import color
 # TODO: sentence length (Mendenhall-style) ?
 
 
-for epistola in [1,2]:
+for epistola in [2]:
 
     print('Epistola {}'.format(epistola))
     print('='*80)
     path = '../testi_{}'.format(epistola)
     if epistola==2:
-        path+='_tutti'
+        path+='_interaEpistola'
 
     positive, negative, ep_text = load_texts(path, positive_author='Dante', unknown_target='EpistolaXIII_{}.txt'.format(epistola))
     n_full_docs = len(positive) + len(negative)
