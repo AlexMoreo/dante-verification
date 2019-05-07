@@ -15,10 +15,15 @@ from util.color_visualization import color
 
 for epistola in [2]:
     if epistola==1:
-        authors = ['Dante','GiovanniBoccaccio','PierDellaVigna']
+        authors = ['Dante','ClaraAssisiensis', 'GiovanniBoccaccio', 'GuidoFaba','PierDellaVigna']
     else:
-        authors = ['Dante', 'BenvenutoDaImola', 'FilippoVillani','GiovanniBoccaccio','GiovanniDelVirgilio',
-                   'GrazioloBambaglioli','GuidoDaPisa','PietroAlighieri','ZonoDeMagnalis']
+        authors = ['Dante', 'BeneFlorentinus','BenvenutoDaImola', 'BoncompagnoDaSigna', 'ClaraAssisiensis',
+                   'FilippoVillani', 'GiovanniBoccaccio', 'GiovanniDelVirgilio',
+                   'GrazioloBambaglioli', 'GuidoDaPisa',
+                   'GuidoDeColumnis', 'GuidoFaba','IacobusDeVaragine','IohannesDeAppia',
+                   'IohannesDePlanoCarpini','IulianusDeSpira', 'NicolaTrevet', 'PierDellaVigna',
+                   'PietroAlighieri', 'RaimundusLullus',
+                   'RyccardusDeSanctoGermano','ZonoDeMagnalis']
 
     discarded = 0
     f1_scores = []
@@ -30,7 +35,7 @@ for epistola in [2]:
         print('='*80)
         path = '../testi_{}'.format(epistola)
         if epistola==2:
-            path+='_with_GuidoDaPisa'
+            path+='_interaEpistola'
 
         positive, negative, ep_text = load_texts(path, positive_author=author, unknown_target='EpistolaXIII_{}.txt'.format(epistola))
         if len(positive) < 2:
@@ -42,8 +47,9 @@ for epistola in [2]:
         feature_extractor = FeatureExtractor(function_words_freq='latin',
                                              conjugations_freq='latin',
                                              features_Mendenhall=True,
+                                             features_sentenceLengths=True,
                                              tfidf_feat_selection_ratio=0.1,
-                                             wordngrams=False, n_wordngrams=(1, 2),
+                                             wordngrams=True, n_wordngrams=(1, 2),
                                              charngrams=True, n_charngrams=(3, 4, 5), preserve_punctuation=False,
                                              split_documents=True, split_policy=split_by_sentences, window_size=3,
                                              normalize_features=True)

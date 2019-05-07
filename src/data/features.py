@@ -5,40 +5,39 @@ from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import chi2
 from sklearn.preprocessing import normalize
 from scipy.sparse import hstack, csr_matrix, issparse
-import collections
 from nltk.corpus import stopwords
 
 
-latin_function_words = ['et',  'in',  'de',  'ad',  'non',  'vt', 'cvm', 'per', 'a', 'sed', 'qve', 'qvia', 'ex', 'sic',
-                        'si', 'etiam', 'idest', 'nam', 'vnde', 'ab', 'vel', 'sicvt', 'ita', 'enim', 'scilicet', 'nec',
-                        'pro', 'avtem', 'ibi',  'dvm', 'vero', 'tamen', 'inter', 'ideo', 'propter', 'contra', 'svb',
-                        'qvomodo', 'vbi', 'svper', 'iam', 'tam', 'hec', 'post', 'qvasi', 'ergo', 'inde', 'e', 'tvnc',
-                        'atqve', 'ac', 'sine', 'nisi', 'nvnc', 'qvando', 'ne', 'vsqve', 'sive', 'avt', 'igitvr', 'circa',
-                        'qvidem', 'svpra', 'ante', 'adhvc', 'sev' , 'apvd', 'olim', 'statim', 'satis', 'ob', 'qvoniam',
-                        'postea', 'nvnqvam']
+latin_function_words = ['et',  'in',  'de',  'ad',  'non',  'ut', 'cum', 'per', 'a', 'sed', 'que', 'quia', 'ex', 'sic',
+                        'si', 'etiam', 'idest', 'nam', 'unde', 'ab', 'uel', 'sicut', 'ita', 'enim', 'scilicet', 'nec',
+                        'pro', 'autem', 'ibi',  'dum', 'uero', 'tamen', 'inter', 'ideo', 'propter', 'contra', 'sub',
+                        'quomodo', 'ubi', 'super', 'iam', 'tam', 'hec', 'post', 'quasi', 'ergo', 'inde', 'e', 'tunc',
+                        'atque', 'ac', 'sine', 'nisi', 'nunc', 'quando', 'ne', 'usque', 'siue', 'aut', 'igitur', 'circa',
+                        'quidem', 'supra', 'ante', 'adhuc', 'seu' , 'apud', 'olim', 'statim', 'satis', 'ob', 'quoniam',
+                        'postea', 'nunquam']
 
-latin_conjugations = ['o', 'eo', 'io', 'as', 'es', 'is', 'at', 'et', 'it', 'amvs', 'emvs', 'imvs', 'atis', 'etis',
-                      'itis', 'ant', 'ent', 'vnt', 'ivnt', 'or', 'eor', 'ior', 'aris', 'eris', 'iris', 'atvr', 'etvr',
-                      'itvr', 'amvr', 'emvr', 'imvr', 'amini', 'emini', 'imini', 'antvr', 'entvr', 'vntvr', 'ivntvr',
-                      'abam', 'ebam', 'iebam',  'abas', 'ebas', 'iebas', 'abat', 'ebat', 'iebat', 'abamvs', 'ebamvs',
-                      'iebamvs', 'abatis', 'ebatis', 'iebatis', 'abant', 'ebant', 'iebant', 'abar', 'ebar', 'iebar',
-                      'abaris', 'ebaris', 'iebaris', 'abatvr', 'ebatvr', 'iebatvr', 'abamvr', 'ebamvr', 'iebamvr',
-                      'abamini', 'ebamini', 'iebamini', 'abantvr', 'ebantvr', 'iebantvr', 'abo', 'ebo', 'am', 'iam',
-                      'abis', 'ebis', 'ies', 'abit', 'ebit', 'iet', 'abimvs', 'ebimvs', 'emvs', 'iemvs', 'abitis',
-                      'ebitis', 'ietis', 'abvnt', 'ebvnt', 'ient', 'abor', 'ebor', 'ar', 'iar', 'aberis', 'eberis',
-                      'ieris', 'abitvr', 'ebitvr', 'ietvr', 'abimvr', 'ebimvr', 'iemvr', 'abimini', 'ebimini', 'iemini',
-                      'abvntvr', 'ebvntvr', 'ientvr', 'i', 'isti', 'it', 'imvs', 'istis', 'ervnt', 'em', 'eam', 'eas',
-                      'ias', 'eat', 'iat', 'eamvs', 'iamvs', 'eatis', 'iatis', 'eant', 'iant', 'er', 'ear', 'earis',
-                      'iaris', 'eatvr', 'iatvr', 'eamvr', 'iamvr', 'eamini', 'iamini', 'eantvr', 'iantvr', 'rem', 'res',
-                      'ret', 'remvs', 'retis', 'rent', 'rer', 'reris', 'retvr', 'remvr', 'remini', 'rentvr', 'erim',
-                      'issem', 'isses', 'isset', 'issemvs', 'issetis', 'issent', 'a', 'ate', 'e', 'ete', 'ite', 'are',
-                      'ere', 'ire', 'ato', 'eto', 'ito', 'atote', 'etote', 'itote', 'anto', 'ento', 'vnto', 'ivnto',
-                      'ator', 'etor', 'itor', 'aminor', 'eminor', 'iminor', 'antor', 'entor', 'vntor', 'ivntor', 'ari',
-                      'eri', 'iri', 'andi', 'ando', 'andvm', 'andvs', 'ande', 'ans', 'antis', 'anti', 'antem', 'antes',
-                      'antivm', 'antibvs', 'antia', 'esse', 'svm', 'es', 'est', 'svmvs', 'estis', 'svnt', 'eram', 'eras',
-                      'erat', 'eramvs', 'eratis', 'erant', 'ero', 'eris', 'erit', 'erimvs', 'eritis', 'erint', 'sim',
-                      'sis', 'sit', 'simvs', 'sitis', 'sint', 'essem', 'esses', 'esset', 'essemvs', 'essetis', 'essent',
-                      'fvi', 'fvisti', 'fvit', 'fvimvs', 'fvistis', 'fvervnt', 'este', 'esto', 'estote', 'svnto']
+latin_conjugations = ['o', 'eo', 'io', 'as', 'es', 'is', 'at', 'et', 'it', 'amus', 'emus', 'imus', 'atis', 'etis',
+                      'itis', 'ant', 'ent', 'unt', 'iunt', 'or', 'eor', 'ior', 'aris', 'eris', 'iris', 'atur', 'etur',
+                      'itur', 'amur', 'emur', 'imur', 'amini', 'emini', 'imini', 'antur', 'entur', 'untur', 'iuntur',
+                      'abam', 'ebam', 'iebam',  'abas', 'ebas', 'iebas', 'abat', 'ebat', 'iebat', 'abamus', 'ebamus',
+                      'iebamus', 'abatis', 'ebatis', 'iebatis', 'abant', 'ebant', 'iebant', 'abar', 'ebar', 'iebar',
+                      'abaris', 'ebaris', 'iebaris', 'abatur', 'ebatur', 'iebatur', 'abamur', 'ebamur', 'iebamur',
+                      'abamini', 'ebamini', 'iebamini', 'abantur', 'ebantur', 'iebantur', 'abo', 'ebo', 'am', 'iam',
+                      'abis', 'ebis', 'ies', 'abit', 'ebit', 'iet', 'abimus', 'ebimus', 'emus', 'iemus', 'abitis',
+                      'ebitis', 'ietis', 'abunt', 'ebunt', 'ient', 'abor', 'ebor', 'ar', 'iar', 'aberis', 'eberis',
+                      'ieris', 'abitur', 'ebitur', 'ietur', 'abimur', 'ebimur', 'iemur', 'abimini', 'ebimini', 'iemini',
+                      'abuntur', 'ebuntur', 'ientur', 'i', 'isti', 'it', 'imus', 'istis', 'erunt', 'em', 'eam', 'eas',
+                      'ias', 'eat', 'iat', 'eamus', 'iamus', 'eatis', 'iatis', 'eant', 'iant', 'er', 'ear', 'earis',
+                      'iaris', 'eatur', 'iatur', 'eamur', 'iamur', 'eamini', 'iamini', 'eantur', 'iantur', 'rem', 'res',
+                      'ret', 'remus', 'retis', 'rent', 'rer', 'reris', 'retur', 'remur', 'remini', 'rentur', 'erim',
+                      'issem', 'isses', 'isset', 'issemus', 'issetis', 'issent', 'a', 'ate', 'e', 'ete', 'ite', 'are',
+                      'ere', 'ire', 'ato', 'eto', 'ito', 'atote', 'etote', 'itote', 'anto', 'ento', 'unto', 'iunto',
+                      'ator', 'etor', 'itor', 'aminor', 'eminor', 'iminor', 'antor', 'entor', 'untor', 'iuntor', 'ari',
+                      'eri', 'iri', 'andi', 'ando', 'andum', 'andus', 'ande', 'ans', 'antis', 'anti', 'antem', 'antes',
+                      'antium', 'antibus', 'antia', 'esse', 'sum', 'es', 'est', 'sumus', 'estis', 'sunt', 'eram', 'eras',
+                      'erat', 'eramus', 'eratis', 'erant', 'ero', 'eris', 'erit', 'erimus', 'eritis', 'erint', 'sim',
+                      'sis', 'sit', 'simus', 'sitis', 'sint', 'essem', 'esses', 'esset', 'essemus', 'essetis', 'essent',
+                      'fui', 'fuisti', 'fuit', 'fuimus', 'fuistis', 'fuerunt', 'este', 'esto', 'estote', 'sunto']
 
 spanish_conjugations = ['o','as','a','amos','áis','an','es','e','emos','éis','en','imos','ís','guir','ger','gir',
                         'ar', 'er', 'ir', 'é', 'aste', 'ó','asteis','aron','í','iste','ió','isteis','ieron',
@@ -167,20 +166,43 @@ def _features_Mendenhall(documents, upto=23):
     :param documents: a list where each element is the text (string) of a document
     :return: a np.array of shape (D,F) where D is len(documents) and F is len(range of lengths considered)
     """
-
     features = []
-
     for text in documents:
         unmod_tokens = nltk.word_tokenize(text)
         mod_tokens = ([token.lower() for token in unmod_tokens if any(char.isalpha() for char in token)])
         nwords = len(mod_tokens)
-
         tokens_len = [len(token) for token in mod_tokens]
-
-        count = collections.Counter(tokens_len)
-        features.append([1000.*count[i]/nwords for i in range(1,upto)])
-
+        tokens_count = []
+        for i in range(1, upto):
+            tokens_count.append(1000.*(sum(j>= i for j in tokens_len))/nwords)
+        features.append(tokens_count)
     return np.array(features)
+
+
+def _features_sentenceLengths(documents, downto=3, upto=70):
+    """
+    Extract features as the length of the sentences, ie. number of words in the sentence.
+    :param documents: a list where each element is the text (string) of a document
+    :param downto: minimal length considered
+    :param upto: maximum length considered
+    :return: a np.array of shape (D,F) where D is len(documents) and F is len(range of lengths considered)
+    """
+    features = []
+    for text in documents:
+        sentences = [t.strip() for t in nltk.tokenize.sent_tokenize(text) if t.strip()]
+        nsent = len(sentences)
+        sent_len = []
+        sent_count = []
+        for sentence in sentences:
+            unmod_tokens = nltk.tokenize.word_tokenize(sentence)
+            mod_tokens = ([token for token in unmod_tokens if any(char.isalpha() for char in token)])
+            sent_len.append(len(mod_tokens))
+        for i in range(downto, upto):
+            sent_count.append(1000.*(sum(j>= i for j in sent_len))/nsent)
+        features.append(sent_count)
+    return np.array(features)
+
+
 
 
 def _features_tfidf(documents, tfidf_vectorizer=None, min_df = 1, ngrams=(1,1)):
@@ -238,6 +260,7 @@ class FeatureExtractor:
                  function_words_freq=None,
                  conjugations_freq=None,
                  features_Mendenhall=True,
+                 features_sentenceLengths=True,
                  wordngrams=False,
                  tfidf_feat_selection_ratio=1.,
                  n_wordngrams=(1, 1),
@@ -271,6 +294,7 @@ class FeatureExtractor:
         self.function_words_freq = function_words_freq
         self.conjugations_freq = conjugations_freq
         self.features_Mendenhall = features_Mendenhall
+        self.features_sentenceLengths = features_sentenceLengths
         self.tfidf = wordngrams
         self.tfidf_feat_selection_ratio = tfidf_feat_selection_ratio
         self.wordngrams = n_wordngrams
@@ -318,6 +342,10 @@ class FeatureExtractor:
         if self.features_Mendenhall:
             X = self._addfeatures(X, _features_Mendenhall(documents))
             self._print('adding Mendenhall words features: {} features'.format(X.shape[1]))
+
+        if self.features_sentenceLengths:
+                X = self._addfeatures(X, _features_sentenceLengths(documents))
+                self._print('adding sentence lengths features: {} features'.format(X.shape[1]))
 
         # sparse feature extraction functions
         if self.tfidf:
@@ -383,6 +411,10 @@ class FeatureExtractor:
         if self.features_Mendenhall:
             TEST = self._addfeatures(TEST, _features_Mendenhall(test))
             self._print('adding Mendenhall words features: {} features'.format(TEST.shape[1]))
+
+        if self.features_sentenceLengths:
+            TEST = self._addfeatures(TEST, _features_sentenceLengths(test))
+            self._print('adding sentence lengths features: {} features'.format(TEST.shape[1]))
 
         # sparse feature extraction functions
         if self.tfidf:
