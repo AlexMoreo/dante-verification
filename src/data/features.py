@@ -387,12 +387,12 @@ class FeatureExtractor:
         return X, y, groups
 
 
-    def transform(self, test, return_fragments=False, window_size=-1):
+    def transform(self, test, return_fragments=False, window_size=-1, avoid_splitting=False):
         test = [test]
         if window_size==-1:
             window_size = self.window_size
 
-        if self.split_documents:
+        if self.split_documents and not avoid_splitting:
             tests, _ = splitter(test, split_policy=self.split_policy, window_size=window_size)
             test.extend(tests)
 

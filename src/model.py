@@ -39,9 +39,11 @@ class AuthorshipVerificator:
 
     def __init__(self, nfolds=10,
                  params = {'C': np.logspace(-4,+4,9), 'class_weight':['balanced',None]},
-                 estimator=SVC):
+                 estimator=SVC,
+                 author_name=None):
         self.nfolds = nfolds
         self.params = params
+        self.author_name = author_name if author_name else 'this author'
         if estimator is SVC:
             self.params['kernel'] = ['linear', 'rbf']
             self.probability = True
@@ -117,7 +119,7 @@ class AuthorshipVerificator:
         assert self.probability, 'svm is not calibrated'
         pred = self.estimator.predict_proba(test)
         full_doc_prediction = pred[0,1]
-        print('{} is from the same author: {}'.format(epistola_name, full_doc_prediction))
+        print(f'{epistola_name} is from {self.author_name} with Probability {full_doc_prediction:.3f}')
         if len(pred) > 1:
             fragment_predictions = pred[1:,1]
             print('fragments average {:.3f}, array={}'.format(fragment_predictions.mean(), fragment_predictions))

@@ -49,9 +49,15 @@ def load_texts(path, positive_author='Dante', unknown_target=None):
 
     # load the test data (Epistolas 1 and 2)
     if unknown_target:
-        unknown = open(join(path, unknown_target), encoding="utf8").read()
-        unknown = remove_citations(unknown)
-        return positive, negative, unknown
+        if isinstance(unknown_target, str):
+            unknown_target = [unknown_target]
+        unknowns = []
+        for unknown_text in unknown_target:
+            unknown = open(join(path, unknown_text), encoding="utf8").read()
+            unknown = remove_citations(unknown)
+            unknowns.append(unknown)
+        if len(unknowns) == 1: unknowns = unknowns[0]
+        return positive, negative, unknowns
 
     else:
         return positive, negative
