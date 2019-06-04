@@ -26,7 +26,7 @@ latin_conjugations = ['o', 'eo', 'io', 'as', 'es', 'is', 'at', 'et', 'it', 'amus
                       'abis', 'ebis', 'ies', 'abit', 'ebit', 'iet', 'abimus', 'ebimus', 'emus', 'iemus', 'abitis',
                       'ebitis', 'ietis', 'abunt', 'ebunt', 'ient', 'abor', 'ebor', 'ar', 'iar', 'aberis', 'eberis',
                       'ieris', 'abitur', 'ebitur', 'ietur', 'abimur', 'ebimur', 'iemur', 'abimini', 'ebimini', 'iemini',
-                      'abuntur', 'ebuntur', 'ientur', 'i', 'isti', 'it', 'imus', 'istis', 'erunt', 'em', 'eam', 'eas',
+                      'abuntur', 'ebuntur', 'ientur', 'i', 'isti', 'it', 'istis', 'erunt', 'em', 'eam', 'eas',
                       'ias', 'eat', 'iat', 'eamus', 'iamus', 'eatis', 'iatis', 'eant', 'iant', 'er', 'ear', 'earis',
                       'iaris', 'eatur', 'iatur', 'eamur', 'iamur', 'eamini', 'iamini', 'eantur', 'iantur', 'rem', 'res',
                       'ret', 'remus', 'retis', 'rent', 'rer', 'reris', 'retur', 'remur', 'remini', 'rentur', 'erim',
@@ -34,7 +34,7 @@ latin_conjugations = ['o', 'eo', 'io', 'as', 'es', 'is', 'at', 'et', 'it', 'amus
                       'ere', 'ire', 'ato', 'eto', 'ito', 'atote', 'etote', 'itote', 'anto', 'ento', 'unto', 'iunto',
                       'ator', 'etor', 'itor', 'aminor', 'eminor', 'iminor', 'antor', 'entor', 'untor', 'iuntor', 'ari',
                       'eri', 'iri', 'andi', 'ando', 'andum', 'andus', 'ande', 'ans', 'antis', 'anti', 'antem', 'antes',
-                      'antium', 'antibus', 'antia', 'esse', 'sum', 'es', 'est', 'sumus', 'estis', 'sunt', 'eram', 'eras',
+                      'antium', 'antibus', 'antia', 'esse', 'sum', 'est', 'sumus', 'estis', 'sunt', 'eram', 'eras',
                       'erat', 'eramus', 'eratis', 'erant', 'ero', 'eris', 'erit', 'erimus', 'eritis', 'erint', 'sim',
                       'sis', 'sit', 'simus', 'sitis', 'sint', 'essem', 'esses', 'esset', 'essemus', 'essetis', 'essent',
                       'fui', 'fuisti', 'fuit', 'fuimus', 'fuistis', 'fuerunt', 'este', 'esto', 'estote', 'sunto']
@@ -139,7 +139,9 @@ def _features_function_words_freq(documents, lang):
         funct_words_freq = [1000. * freqs[function_word] / nwords for function_word in function_words]
         features.append(funct_words_freq)
 
-    return np.array(features)
+    f_names = [f'funcw::{f}' for f in function_words]
+
+    return np.array(features), f_names
 
 
 def _features_conjugations_freq(documents, lang):
@@ -156,7 +158,9 @@ def _features_conjugations_freq(documents, lang):
         conjugation_freq = [1000. * freqs[conjugation] / nwords for conjugation in conjugations]
         features.append(conjugation_freq)
 
-    return np.array(features)
+    f_names = [f'conj::{f}' for f in conjugations]
+
+    return np.array(features), f_names
 
 
 def _features_Mendenhall(documents, upto=23):
@@ -176,7 +180,10 @@ def _features_Mendenhall(documents, upto=23):
         for i in range(1, upto):
             tokens_count.append(1000.*(sum(j>= i for j in tokens_len))/nwords)
         features.append(tokens_count)
-    return np.array(features)
+
+    f_names = [f'mendenhall::{c}' for c in range(1,upto)]
+
+    return np.array(features), f_names
 
 
 def _features_sentenceLengths(documents, downto=3, upto=70):
@@ -200,9 +207,10 @@ def _features_sentenceLengths(documents, downto=3, upto=70):
         for i in range(downto, upto):
             sent_count.append(1000.*(sum(j>= i for j in sent_len))/nsent)
         features.append(sent_count)
-    return np.array(features)
 
+    f_names = [f'sentlength::{c}' for c in range(downto, upto)]
 
+    return np.array(features), f_names
 
 
 def _features_tfidf(documents, tfidf_vectorizer=None, min_df = 1, ngrams=(1,1)):
@@ -306,6 +314,7 @@ class FeatureExtractor:
         self.normalize_features=normalize_features
         self.window_size = window_size
         self.verbose = verbose
+        self.feature_names = None
 
 
     def fit_transform(self, positives, negatives):
@@ -313,6 +322,7 @@ class FeatureExtractor:
         authors = [1]*len(positives) + [0]*len(negatives)
         n_original_docs = len(documents)
         groups = list(range(n_original_docs))
+        self.feature_names = []
 
         if self.split_documents:
             doc_fragments, authors_fragments, groups_fragments = splitter(documents, authors,
@@ -332,47 +342,71 @@ class FeatureExtractor:
 
         # dense feature extraction functions
         if self.function_words_freq:
-            X = self._addfeatures(X, _features_function_words_freq(documents, self.function_words_freq))
+            F, f_names = _features_function_words_freq(documents, self.function_words_freq)
+            X = self._addfeatures(X, F)
+            self.feature_names.extend(f_names)
             self._print('adding function words features: {} features'.format(X.shape[1]))
+        assert X.shape[1] == len(self.feature_names), f'wrong number of feature names, expected {X.shape[1]} found {len(self.feature_names)}'
 
         if self.conjugations_freq:
-            X = self._addfeatures(X, _features_conjugations_freq(documents, self.conjugations_freq))
+            F, f_names = _features_conjugations_freq(documents, self.conjugations_freq)
+            X = self._addfeatures(X, F)
+            self.feature_names.extend(f_names)
             self._print('adding conjugation features: {} features'.format(X.shape[1]))
+        assert X.shape[1] == len(self.feature_names), f'wrong number of feature names, expected {X.shape[1]} found {len(self.feature_names)}'
 
         if self.features_Mendenhall:
-            X = self._addfeatures(X, _features_Mendenhall(documents))
+            F, f_names = _features_Mendenhall(documents)
+            X = self._addfeatures(X, F)
+            self.feature_names.extend(f_names)
             self._print('adding Mendenhall words features: {} features'.format(X.shape[1]))
+        assert X.shape[1] == len(self.feature_names), f'wrong number of feature names, expected {X.shape[1]} found {len(self.feature_names)}'
 
         if self.features_sentenceLengths:
-                X = self._addfeatures(X, _features_sentenceLengths(documents))
-                self._print('adding sentence lengths features: {} features'.format(X.shape[1]))
+            F, f_names = _features_sentenceLengths(documents)
+            X = self._addfeatures(X, F)
+            self.feature_names.extend(f_names)
+            self._print('adding sentence lengths features: {} features'.format(X.shape[1]))
+        assert X.shape[1] == len(self.feature_names), f'wrong number of feature names, expected {X.shape[1]} found {len(self.feature_names)}'
 
         # sparse feature extraction functions
         if self.tfidf:
             X_features, vectorizer = _features_tfidf(documents, ngrams=self.wordngrams)
             self.tfidf_vectorizer = vectorizer
+            index2word = {i: w for w, i in vectorizer.vocabulary_.items()}
+            f_names = [f'tfidf::{index2word[i]}' for i in range(len(index2word))]
 
             if self.tfidf_feat_selection_ratio < 1.:
                 if self.verbose: print('feature selection')
                 X_features, feat_sel = _feature_selection(X_features, y, self.tfidf_feat_selection_ratio)
                 self.feat_sel_tfidf = feat_sel
+                f_names = [f_names[i] for i in feat_sel.get_support(indices=True)]
 
             X = self._addfeatures(_tocsr(X), X_features)
+            self.feature_names.extend(f_names)
             self._print('adding tfidf words features: {} features'.format(X.shape[1]))
 
+        assert X.shape[1] == len(self.feature_names), f'wrong number of feature names, expected {X.shape[1]} found {len(self.feature_names)}'
         if self.ngrams:
             X_features, vectorizer = _features_ngrams(documents, self.ns,
                                                       preserve_punctuation=self.preserve_punctuation)
             self.ngrams_vectorizer = vectorizer
+            index2word = {i: w for w, i in vectorizer.vocabulary_.items()}
+            f_names = [f'ngram::{index2word[i]}' for i in range(len(index2word))]
 
             if self.tfidf_feat_selection_ratio < 1.:
                 if self.verbose: print('feature selection')
                 X_features, feat_sel = _feature_selection(X_features, y, self.tfidf_feat_selection_ratio)
                 self.feat_sel_ngrams = feat_sel
+                f_names = [f_names[i] for i in feat_sel.get_support(indices=True)]
 
             X = self._addfeatures(_tocsr(X), X_features)
+            self.feature_names.extend(f_names)
             self._print('adding ngrams character features: {} features'.format(X.shape[1]))
 
+        self.feature_names = np.asarray(self.feature_names)
+
+        assert X.shape[1] == len(self.feature_names), f'wrong number of feature names, expected {X.shape[1]} found {len(self.feature_names)}'
         # print summary
         if self.verbose:
             print(
@@ -401,19 +435,23 @@ class FeatureExtractor:
 
         # dense feature extraction functions
         if self.function_words_freq:
-            TEST = self._addfeatures(TEST, _features_function_words_freq(test, self.function_words_freq))
+            F,_=_features_function_words_freq(test, self.function_words_freq)
+            TEST = self._addfeatures(TEST, F)
             self._print('adding function words features: {} features'.format(TEST.shape[1]))
 
         if self.conjugations_freq:
-            TEST = self._addfeatures(TEST, _features_conjugations_freq(test, self.conjugations_freq))
+            F,_=_features_conjugations_freq(test, self.conjugations_freq)
+            TEST = self._addfeatures(TEST, F)
             self._print('adding conjugation features: {} features'.format(TEST.shape[1]))
 
         if self.features_Mendenhall:
-            TEST = self._addfeatures(TEST, _features_Mendenhall(test))
+            F,_ = _features_Mendenhall(test)
+            TEST = self._addfeatures(TEST, F)
             self._print('adding Mendenhall words features: {} features'.format(TEST.shape[1]))
 
         if self.features_sentenceLengths:
-            TEST = self._addfeatures(TEST, _features_sentenceLengths(test))
+            F, _ = _features_sentenceLengths(test)
+            TEST = self._addfeatures(TEST, F)
             self._print('adding sentence lengths features: {} features'.format(TEST.shape[1]))
 
         # sparse feature extraction functions
@@ -454,8 +492,6 @@ class FeatureExtractor:
 
 
     def _addfeatures(self, X, F):
-        # plt.matshow(F[:25])
-        # plt.show()
         if self.normalize_features:
             normalize(F, axis=1, copy=False)
 

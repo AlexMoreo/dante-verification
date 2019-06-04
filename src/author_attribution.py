@@ -104,7 +104,7 @@ for epistola in [1]:
                    'RyccardusDeSanctoGermano', 'ZonoDeMagnalis']
         paragraphs = range(14, 91)
         assert len(authors)==20, f'unexpected number of authors ({len(authors)})'
-        path+='_tutti'
+
 
     discarded = 0
     f1_scores = []

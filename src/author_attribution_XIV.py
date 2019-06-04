@@ -98,7 +98,6 @@ for epistola in [1]:
         authors = ['Dante'] + authors1
     elif epistola == 2:
         authors = ['Dante'] + authors2
-        path += '_tutti'
     else:
         authors = ['Dante'] + authors3
 

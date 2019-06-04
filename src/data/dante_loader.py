@@ -28,13 +28,13 @@ def remove_citations(doc):
     doc = remove_pattern(doc, start_symbol='{', end_symbol='}', counter=counter)
     return doc
 
-def load_texts(path, positive_author='Dante', unknown_target=None):
+def load_texts(path, positive_author='Dante', unknown_target=None, train_skip_prefix='EpistolaXIII_'):
     # load the training data (all documents but Epistolas 1 and 2)
     positive,negative = [],[]
     authors   = []
     ndocs=0
     for file in os.listdir(path):
-        if file.startswith('EpistolaXIII_'): continue
+        if file.startswith(train_skip_prefix): continue
         file_clean = file.replace('.txt','')
         author, textname = file_clean.split('_')[0],file_clean.split('_')[1]
         text = open(join(path,file), encoding= "utf8").read()
@@ -63,7 +63,7 @@ def load_texts(path, positive_author='Dante', unknown_target=None):
         return positive, negative
 
 
-def list_texts(path):
+def ___list_texts(path):
     authors   = {}
     for file in os.listdir(path):
         if file.startswith('EpistolaXIII_'): continue

@@ -13,7 +13,7 @@ from util.color_visualization import color
 # TODO: sentence length (Mendenhall-style) ?
 
 
-for epistola in [2]:
+for epistola in [1]:
     if epistola==1:
         authors = ['Dante','ClaraAssisiensis', 'GiovanniBoccaccio', 'GuidoFaba','PierDellaVigna']
     else:
@@ -50,7 +50,8 @@ for epistola in [2]:
                                              features_sentenceLengths=True,
                                              tfidf_feat_selection_ratio=0.1,
                                              wordngrams=True, n_wordngrams=(1, 2),
-                                             charngrams=True, n_charngrams=(3, 4, 5), preserve_punctuation=False,
+                                             charngrams=True, n_charngrams=(3, 4, 5),
+                                             preserve_punctuation=False,
                                              split_documents=True, split_policy=split_by_sentences, window_size=3,
                                              normalize_features=True)
 

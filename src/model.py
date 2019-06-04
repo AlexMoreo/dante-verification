@@ -47,26 +47,26 @@ class AuthorshipVerificator:
         if estimator is SVC:
             self.params['kernel'] = ['linear', 'rbf']
             self.probability = True
-            self.svm = estimator(probability=self.probability)
+            self.classifier = estimator(probability=self.probability)
         elif estimator is LinearSVC:
             self.probability = False
-            self.svm = estimator()
+            self.classifier = estimator()
         elif estimator is LogisticRegression:
             self.probability = True
-            self.svm = LogisticRegression()
+            self.classifier = LogisticRegression()
 
     def fit(self,X,y,groups=None):
         if not isinstance(y,np.ndarray): y=np.array(y)
         positive_examples = y.sum()
         if positive_examples >= self.nfolds:
-            print('optimizing {}'.format(self.svm.__class__.__name__))
+            print('optimizing {}'.format(self.classifier.__class__.__name__))
             # if groups is None or len(np.unique(groups[y==1])):
             folds = list(StratifiedKFold(n_splits=self.nfolds).split(X, y))
             # folds = list(GroupKFold(n_splits=self.nfolds).split(X,y,groups))
 
-            self.estimator = GridSearchCV(self.svm, param_grid=self.params, cv=folds, scoring=make_scorer(f1), n_jobs=-1)
+            self.estimator = GridSearchCV(self.classifier, param_grid=self.params, cv=folds, scoring=make_scorer(f1), n_jobs=-1)
         else:
-            self.estimator = self.svm
+            self.estimator = self.classifier
 
         self.estimator.fit(X, y)
 

@@ -13,8 +13,6 @@ for epistola in [1,2,3]: #3 means "both Ep1 and Ep2 corpora"
     print('='*80)
     path = '../testiXIV_{}'.format(epistola)
     paragraphs = range(1, 6)
-    if epistola==2:
-        path+='_tutti'
 
     target = [f'Epistola_ArigoVII.txt'] + [f'Epistola_ArigoVII_{paragraph}.txt' for paragraph in paragraphs]
     positive, negative, ep_texts = load_texts(path, positive_author='Dante', unknown_target=target, train_skip_prefix='Epistola_ArigoVII')
