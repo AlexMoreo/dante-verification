@@ -60,27 +60,30 @@ def plot_attribution(path, authors, attributions, paragraph_offset=1, figsize=(5
     plt.savefig(path)
 
 import sys
-for epistola in [1]:
-    if epistola == 1:
-        authors = ['Dante', 'ClaraAssisiensis', 'GiovanniBoccaccio', 'GuidoFaba', 'PierDellaVigna']
-        paragraph_offset = 1
-        figsize=(3,9)
-        label_offset=0.2
-
-    else:
-        authors = ['Dante', 'BeneFlorentinus', 'BenvenutoDaImola', 'BoncompagnoDaSigna',
+authors1 = ['ClaraAssisiensis', 'GiovanniBoccaccio', 'GuidoFaba', 'PierDellaVigna']
+authors2 = ['BeneFlorentinus', 'BenvenutoDaImola', 'BoncompagnoDaSigna',
                    'FilippoVillani', 'GiovanniBoccaccio', 'GiovanniDelVirgilio',
                    'GrazioloBambaglioli', 'GuidoDaPisa',
                    'GuidoDeColumnis', 'GuidoFaba', 'IacobusDeVaragine', 'IohannesDeAppia',
                    'IohannesDePlanoCarpini', 'IulianusDeSpira', 'NicolaTrevet',
                    'PietroAlighieri', 'RaimundusLullus',
                    'RyccardusDeSanctoGermano', 'ZonoDeMagnalis']
-        paragraph_offset = 14
-        figsize = (6,20)
-        label_offset=0.3
+authors3 = sorted(np.unique(authors1 + authors2).tolist())
 
-    attributions = np.load(f'attribution_ep{epistola}.npy')
-    plot_attribution(f'plot{epistola}.png', authors, attributions, paragraph_offset=paragraph_offset, figsize=figsize, label_offset=label_offset)
+for epistola in [1]:
+    paragraph_offset = 1
+    label_offset = 0.2
+    if epistola == 1:
+        authors = ['Dante'] + authors1
+        figsize = (4, 4)
+    elif epistola == 2:
+        authors = ['Dante'] + authors2
+        figsize = (6, 4)
+    else:
+        authors = ['Dante'] + authors3
+
+    attributions = np.load(f'attribution_ep{epistola}_xiv.npy')
+    plot_attribution(f'plot{epistola}_xiv.png', authors, attributions, paragraph_offset=paragraph_offset, figsize=figsize, label_offset=label_offset)
 sys.exit(0)
 
 for epistola in [1]:
@@ -88,23 +91,16 @@ for epistola in [1]:
     author_attribution = []
     print(f'Epistola {epistola}')
     print('='*80)
-    path = f'../testi_{epistola}'
+    path = f'../testiXIV_{epistola}'
+
 
     if epistola == 1:
-        authors = ['Dante', 'ClaraAssisiensis', 'GiovanniBoccaccio', 'GuidoFaba', 'PierDellaVigna']
-        paragraphs = range(1,14)
-
+        authors = ['Dante'] + authors1
+    elif epistola == 2:
+        authors = ['Dante'] + authors2
+        path += '_tutti'
     else:
-        authors = ['Dante', 'BeneFlorentinus', 'BenvenutoDaImola', 'BoncompagnoDaSigna',
-                   'FilippoVillani', 'GiovanniBoccaccio', 'GiovanniDelVirgilio',
-                   'GrazioloBambaglioli', 'GuidoDaPisa',
-                   'GuidoDeColumnis', 'GuidoFaba', 'IacobusDeVaragine', 'IohannesDeAppia',
-                   'IohannesDePlanoCarpini', 'IulianusDeSpira', 'NicolaTrevet',
-                   'PietroAlighieri', 'RaimundusLullus',
-                   'RyccardusDeSanctoGermano', 'ZonoDeMagnalis']
-        paragraphs = range(14, 91)
-        assert len(authors)==20, f'unexpected number of authors ({len(authors)})'
-        path+='_tutti'
+        authors = ['Dante'] + authors3
 
     discarded = 0
     f1_scores = []
@@ -115,11 +111,8 @@ for epistola in [1]:
         print('Corpus of Epistola {}'.format(epistola))
         print('=' * 80)
 
-        target = [f'EpistolaXIII_{epistola}.txt'] + [f'EpistolaXIII_{epistola}_{paragraph}.txt' for paragraph in paragraphs]
-        positive, negative, ep_texts = load_texts(path, positive_author=author, unknown_target=target)
-        # if len(positive) < 2:
-        #     discarded += 1
-        #     continue
+        target = [f'Epistola_ArigoVII.txt'] + [f'Epistola_ArigoVII_{paragraph}.txt' for paragraph in range(1,6)]
+        positive, negative, ep_texts = load_texts(path, positive_author=author, unknown_target=target, train_skip_prefix='Epistola_ArigoVII')
 
         n_full_docs = len(positive) + len(negative)
 
@@ -148,7 +141,7 @@ for epistola in [1]:
         author_attribution.append(attributions)
 
     author_attribution = np.asarray(author_attribution)
-    attribution_path = f'attribution_ep{epistola}.npy'
+    attribution_path = f'attribution_ep{epistola}_xiv.npy'
     print(f'saving attribution matrix of shape {author_attribution.shape} in {attribution_path}')
     np.save(attribution_path, author_attribution)
 
