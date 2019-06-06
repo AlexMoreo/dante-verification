@@ -25,13 +25,16 @@ for epistola in [1]:
     if epistola==2:
         paragraphs = range(14, 91)
 
-    target = [f'EpistolaXIII_{epistola}_{paragraph}.txt' for paragraph in paragraphs]
+    target = [f'EpistolaXIII_{epistola}.txt'] + [f'EpistolaXIII_{epistola}_{paragraph}.txt' for paragraph in paragraphs]
     positive, negative, ep_texts = load_texts(path, positive_author='Dante', unknown_target=target)
 
     pickle_file = f'../dante_color/epistola{epistola}.pkl'
     if os.path.exists(pickle_file):
         print(f'loading pickle file {pickle_file}')
         probabilities = pickle.load(open(pickle_file, 'rb'))
+        for prob,text in zip(probabilities,ep_texts):
+            text = text.replace('\n','')
+            print(f"{prob:.3f}:{text}")
     else:
         print(f'generating pickle file')
         n_full_docs = len(positive) + len(negative)
