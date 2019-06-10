@@ -15,7 +15,7 @@ for epistola in [1,2,3]: #3 means "both Ep1 and Ep2 corpora"
     paragraphs = range(1, 6)
 
     target = [f'Epistola_ArigoVII.txt'] + [f'Epistola_ArigoVII_{paragraph}.txt' for paragraph in paragraphs]
-    positive, negative, ep_texts = load_texts(path, positive_author='Dante', unknown_target=target, train_skip_prefix='Epistola_ArigoVII')
+    positive, negative, _, _, ep_texts = load_texts(path, positive_author='Dante', unknown_target=target, train_skip_prefix='Epistola_ArigoVII')
 
     pickle_file = f'../dante_color/epistola{epistola}_xiv.pkl'
     if os.path.exists(pickle_file):

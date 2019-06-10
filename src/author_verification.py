@@ -15,7 +15,7 @@ import os
 # TODO: sentence length (Mendenhall-style) ?
 
 
-for epistola in [1]:
+for epistola in [2]:
 
     print('Epistola {}'.format(epistola))
     print('='*80)
@@ -26,7 +26,7 @@ for epistola in [1]:
         paragraphs = range(14, 91)
 
     target = [f'EpistolaXIII_{epistola}.txt'] + [f'EpistolaXIII_{epistola}_{paragraph}.txt' for paragraph in paragraphs]
-    positive, negative, ep_texts = load_texts(path, positive_author='Dante', unknown_target=target)
+    positive, negative, _, _, ep_texts = load_texts(path, positive_author='Dante', unknown_target=target)
 
     pickle_file = f'../dante_color/epistola{epistola}.pkl'
     if os.path.exists(pickle_file):
@@ -35,6 +35,7 @@ for epistola in [1]:
         for prob,text in zip(probabilities,ep_texts):
             text = text.replace('\n','')
             print(f"{prob:.3f}:{text}")
+        print(f'media={np.asarray(probabilities[1:]).mean()}')
     else:
         print(f'generating pickle file')
         n_full_docs = len(positive) + len(negative)
@@ -49,6 +50,7 @@ for epistola in [1]:
                                              preserve_punctuation=False,
                                              split_documents=True, split_policy=split_by_sentences, window_size=3,
                                              normalize_features=True)
+
 
         Xtr,ytr,groups = feature_extractor.fit_transform(positive, negative)
         print(ytr)

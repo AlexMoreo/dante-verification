@@ -80,7 +80,7 @@ class AuthorshipVerificator:
 
         return self
 
-    def leave_one_out(self, X, y, groups=None, test_lowest_index_only=True, counters=False):
+    def leave_one_out(self, X, y, files, groups=None, test_lowest_index_only=True, counters=False):
 
         if groups is None:
             print('Computing LOO without groups')
@@ -94,7 +94,10 @@ class AuthorshipVerificator:
                 folds = [(train, np.min(test, keepdims=True)) for train, test in folds]
 
         scores = cross_val_score(self.estimator, X, y, cv=folds, scoring=make_scorer(f1), n_jobs=-1)
+        missclassified = '\n'.join(files[scores==0].tolist())
         print(scores)
+        print(missclassified)
+
         if counters and test_lowest_index_only:
             yfull_true = y[:len(folds)]
             yfull_predict = np.zeros_like(yfull_true)

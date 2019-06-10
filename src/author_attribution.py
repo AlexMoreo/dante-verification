@@ -59,29 +59,29 @@ def plot_attribution(path, authors, attributions, paragraph_offset=1, figsize=(5
     # plt.show()
     plt.savefig(path)
 
-import sys
-for epistola in [1]:
-    if epistola == 1:
-        authors = ['Dante', 'ClaraAssisiensis', 'GiovanniBoccaccio', 'GuidoFaba', 'PierDellaVigna']
-        paragraph_offset = 1
-        figsize=(3,9)
-        label_offset=0.2
-
-    else:
-        authors = ['Dante', 'BeneFlorentinus', 'BenvenutoDaImola', 'BoncompagnoDaSigna',
-                   'FilippoVillani', 'GiovanniBoccaccio', 'GiovanniDelVirgilio',
-                   'GrazioloBambaglioli', 'GuidoDaPisa',
-                   'GuidoDeColumnis', 'GuidoFaba', 'IacobusDeVaragine', 'IohannesDeAppia',
-                   'IohannesDePlanoCarpini', 'IulianusDeSpira', 'NicolaTrevet',
-                   'PietroAlighieri', 'RaimundusLullus',
-                   'RyccardusDeSanctoGermano', 'ZonoDeMagnalis']
-        paragraph_offset = 14
-        figsize = (6,20)
-        label_offset=0.3
-
-    attributions = np.load(f'attribution_ep{epistola}.npy')
-    plot_attribution(f'plot{epistola}.png', authors, attributions, paragraph_offset=paragraph_offset, figsize=figsize, label_offset=label_offset)
-sys.exit(0)
+# import sys
+# for epistola in [1]:
+#     if epistola == 1:
+#         authors = ['Dante', 'ClaraAssisiensis', 'GiovanniBoccaccio', 'GuidoFaba', 'PierDellaVigna']
+#         paragraph_offset = 1
+#         figsize=(3,9)
+#         label_offset=0.2
+#
+#     else:
+#         authors = ['Dante', 'BeneFlorentinus', 'BenvenutoDaImola', 'BoncompagnoDaSigna',
+#                    'FilippoVillani', 'GiovanniBoccaccio', 'GiovanniDelVirgilio',
+#                    'GrazioloBambaglioli', 'GuidoDaPisa',
+#                    'GuidoDeColumnis', 'GuidoFaba', 'IacobusDeVaragine', 'IohannesDeAppia',
+#                    'IohannesDePlanoCarpini', 'IulianusDeSpira', 'NicolaTrevet',
+#                    'PietroAlighieri', 'RaimundusLullus',
+#                    'RyccardusDeSanctoGermano', 'ZonoDeMagnalis']
+#         paragraph_offset = 14
+#         figsize = (6,20)
+#         label_offset=0.3
+#
+#     attributions = np.load(f'attribution_ep{epistola}.npy')
+#     plot_attribution(f'plot{epistola}.png', authors, attributions, paragraph_offset=paragraph_offset, figsize=figsize, label_offset=label_offset)
+# sys.exit(0)
 
 for epistola in [1]:
 
@@ -116,7 +116,7 @@ for epistola in [1]:
         print('=' * 80)
 
         target = [f'EpistolaXIII_{epistola}.txt'] + [f'EpistolaXIII_{epistola}_{paragraph}.txt' for paragraph in paragraphs]
-        positive, negative, ep_texts = load_texts(path, positive_author=author, unknown_target=target)
+        positive, negative, _, _, ep_texts = load_texts(path, positive_author=author, unknown_target=target)
         # if len(positive) < 2:
         #     discarded += 1
         #     continue

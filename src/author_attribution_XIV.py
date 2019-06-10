@@ -111,7 +111,7 @@ for epistola in [1]:
         print('=' * 80)
 
         target = [f'Epistola_ArigoVII.txt'] + [f'Epistola_ArigoVII_{paragraph}.txt' for paragraph in range(1,6)]
-        positive, negative, ep_texts = load_texts(path, positive_author=author, unknown_target=target, train_skip_prefix='Epistola_ArigoVII')
+        positive, negative, _, _, ep_texts = load_texts(path, positive_author=author, unknown_target=target, train_skip_prefix='Epistola_ArigoVII')
 
         n_full_docs = len(positive) + len(negative)
 

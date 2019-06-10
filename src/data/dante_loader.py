@@ -3,6 +3,8 @@ from os.path import join
 import re
 import collections
 
+
+
 # ------------------------------------------------------------------------
 # document loading routine
 # ------------------------------------------------------------------------
@@ -30,7 +32,8 @@ def remove_citations(doc):
 
 def load_texts(path, positive_author='Dante', unknown_target=None, train_skip_prefix='EpistolaXIII_'):
     # load the training data (all documents but Epistolas 1 and 2)
-    positive,negative = [],[]
+    positive, negative = [], []
+    files_positive, files_negative = [], []
     authors   = []
     ndocs=0
     for file in os.listdir(path):
@@ -42,8 +45,10 @@ def load_texts(path, positive_author='Dante', unknown_target=None, train_skip_pr
 
         if author == positive_author:
             positive.append(text)
+            files_positive.append(file)
         else:
             negative.append(text)
+            files_negative.append(file)
         authors.append(author)
         ndocs+=1
 
@@ -57,10 +62,10 @@ def load_texts(path, positive_author='Dante', unknown_target=None, train_skip_pr
             unknown = remove_citations(unknown)
             unknowns.append(unknown)
         if len(unknowns) == 1: unknowns = unknowns[0]
-        return positive, negative, unknowns
+        return positive, negative, files_positive, files_negative, unknowns
 
     else:
-        return positive, negative
+        return positive, negative, files_positive, files_negative
 
 
 def ___list_texts(path):

@@ -37,7 +37,8 @@ for epistola in [1]:
         if epistola==2:
             path+='_interaEpistola'
 
-        positive, negative, ep_text = load_texts(path, positive_author=author, unknown_target='EpistolaXIII_{}.txt'.format(epistola))
+        positive, negative, pos_files, neg_files, ep_text = load_texts(path, positive_author=author, unknown_target='EpistolaXIII_{}.txt'.format(epistola))
+        files = np.asarray(pos_files + neg_files)
         if len(positive) < 2:
             discarded+=1
             continue
@@ -55,6 +56,7 @@ for epistola in [1]:
                                              split_documents=True, split_policy=split_by_sentences, window_size=3,
                                              normalize_features=True)
 
+
         Xtr,ytr,groups = feature_extractor.fit_transform(positive, negative)
         print(ytr)
 
@@ -64,7 +66,7 @@ for epistola in [1]:
         av = AuthorshipVerificator(nfolds=10, estimator=LogisticRegression)
         av.fit(Xtr,ytr,groups)
 
-        score_ave, score_std, tp, fp, fn, tn = av.leave_one_out(Xtr, ytr, groups, test_lowest_index_only=True, counters=True)
+        score_ave, score_std, tp, fp, fn, tn = av.leave_one_out(Xtr, ytr, files, groups, test_lowest_index_only=True, counters=True)
         # print('LOO[full-docs]={:.3f} +-{:.5f}'.format(score_ave, score_std))
         f1_scores.append(f1_from_counters(tp, fp, fn, tn))
         counters.append((tp, fp, fn, tn))
