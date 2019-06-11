@@ -15,7 +15,7 @@ import os
 # TODO: sentence length (Mendenhall-style) ?
 
 
-for epistola in [2]:
+for epistola in [1,2]:
 
     print('Epistola {}'.format(epistola))
     print('='*80)
@@ -25,7 +25,7 @@ for epistola in [2]:
     if epistola==2:
         paragraphs = range(14, 91)
 
-    target = [f'EpistolaXIII_{epistola}.txt'] + [f'EpistolaXIII_{epistola}_{paragraph}.txt' for paragraph in paragraphs]
+    target = [f'EpistolaXIII_{epistola}.txt'] + [f'EpistolaXIII_{epistola}_new.txt'] + [f'EpistolaXIII_{epistola}_{paragraph}.txt' for paragraph in paragraphs]
     positive, negative, _, _, ep_texts = load_texts(path, positive_author='Dante', unknown_target=target)
 
     pickle_file = f'../dante_color/epistola{epistola}.pkl'
