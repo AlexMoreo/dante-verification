@@ -505,3 +505,93 @@ class FeatureExtractor:
         if self.verbose:
             print(msg)
 
+
+
+if __name__=='__main__':
+    from collections import Counter
+
+    # text = 'Magnifico atque uictorioso domino, domino Cani Grandi de la Scala, sacratissimi cesarei principatus in urbe Uerona et ciuitate Uicentie uicario generali, deuotissimus suus Dantes Alagherii, Florentinus natione non moribus, uitam orat per tempora diuturna felicem, et gloriosi nominis perpetuum incrementum.'
+    text = 'Magnifico atque uictorioso domino, domino Cani Grandi de la Scala, sacratissimi cesarei principatus in urbe Uerona et ciuitate Uicentie uicario generali, deuotissimus suus Dantes Alagherii, Florentinus natione non moribus, uitam orat per tempora diuturna felicem, et gloriosi nominis perpetuum incrementum. Inclita uestre magnificentie laus, quam fama uigil uolitando disseminat, sic distrahit in diuersa diuersos, ut hos in spem sue prosperitatis attollat, hos exterminii deiciat in terrorem. Huius quidem preconium, facta modernorum exsuperans, tanquam ueri existentia latius, arbitrabar aliquando superfluum. Uerum, ne diuturna me nimis incertitudo suspenderet, uelut Austri regina Ierusalem petiit, uelut Pallas petiit Elicona, Ueronam petii fidis oculis discussurus audita, ibique magnalia uestra uidi, uidi beneficia simul et tetigi; et quemadmodum prius dictorum ex parte suspicabar excessum, sic posterius ipsa facta excessiua cognoui. Quo factum est ut ex auditu solo cum quadam animi subiectione beniuolus prius exstiterim; sed ex uisu postmodum deuotissimus et amicus. Nec reor amici nomen assumens, ut nonnulli forsitan obiectarent, reatum presumptionis incurrere, cum non minus dispares connectantur quam pares amicitie sacramento. Nam si delectabiles et utiles amicitias inspicere libeat, illis persepius inspicienti patebit, preheminentes inferioribus coniugari personas. Et si ad ueram ac per se amicitiam torqueatur intuitus, nonne illustrium summorumque principum plerunque uiros fortuna obscuros, honestate preclaros, amicos fuisse constabit? Quidni, cum etiam Dei et hominis amicitia nequaquam impediatur excessu? Quod si cuiquam, quod asseritur, nunc uideretur indignum, Spiritum Sanctum audiat, amicitie sue participes quosdam homines profitentem. Nam in Sapientia de sapientia legitur, quoniam *infinitus thesaurus est hominibus, quo qui usi sunt, participes facti sunt amicitie Dei*. Sed habet imperitia uulgi sine discretione iudicium; et quemadmodum solem pedalis magnitudinis arbitratur, sic et circa mores uana credulitate decipitur. Nos autem, quibus optimum quod est in nobis noscere datum est, gregum uestigia sectari non decet, quin ymo suis erroribus obuiare tenemur. Nam intellectu ac ratione degentes, diuina quadam libertate dotati, nullis consuetudinibus astringuntur; nec mirum, cum non ipsi legibus, sed ipsis leges potius dirigantur. Liquet igitur, quod superius dixi, me scilicet esse deuotissimum et amicum, nullatenus esse presumptum. Preferens ergo amicitiam uestram quasi thesaurum carissimum, prouidentia diligenti et accurata solicitudine illam seruare desidero. Itaque, cum in dogmatibus moralis negotii amicitiam adequari et saluari analogo doceatur, ad retribuendum pro collatis beneficiis plus quam semel analogiam sequi michi uotiuum est; et propter hoc munuscula mea sepe multum conspexi et ab inuicem segregaui, nec non segregata percensui, dignius gratiusque uobis inquirens. Neque ipsi preheminentie uestre congruum magis comperi magis quam Comedie sublimem canticam, que decoratur titulo Paradisi; et illam sub presenti epistola, tanquam sub epigrammate proprio dedicatam, uobis ascribo, uobis offero, uobis denique recommendo. Illud quoque preterire silentio simpliciter inardescens non sinit affectus, quod in hac donatione plus dono quam domino et honoris et fame conferri potest uideri.Quidni cum eius titulum iam presagiam de gloria uestri nominis ampliandum? Satis actenus uidebar expressisse quod de proposito fuit; sed zelus gratie uestre, quam sitio quasi uitam paruipendens, a primordio metam prefixam urget ulterius. Itaque, formula consumata epistole, ad introductionem oblati operis aliquid sub lectoris officio compendiose aggrediar.'
+    print(text)
+
+    # char n-grams
+    w=3
+    ngrams = [text[i:i+w].replace(' ', '_') for i in range(len(text)-w + 1)]
+    print('ngrams')
+    print(', '.join(ngrams))
+    print(Counter(ngrams).most_common())
+
+    # word n-grams
+    w = 2
+    words = text.split()
+    wngrams = ['_'.join(words[i:i + w]).replace(',','') for i in range(len(words) - w + 1)]
+    print('\nwngrams')
+    print(', '.join(wngrams))
+    print(Counter(wngrams).most_common())
+
+    fn_words = [w if w not in latin_function_words else f"{w}(*)" for w in words]
+    print('\nfunction words')
+    print(' '.join(fn_words))
+
+    verbal_words = []
+    for w in words:
+        lcs = sorted(latin_conjugations, key=lambda x: -len(x))
+        toadd = w
+        for lc in lcs:
+            if len(w) <= len(lc): continue
+            if w.endswith(lc):
+                toadd = w[:-len(lc)] + f'[{lc}]'
+                break
+        verbal_words.append(toadd)
+    print('\nverbal endings')
+    print(' '.join(verbal_words))
+
+    print('\nword lengths')
+    counter = Counter([len(w.replace(',','')) for w in words])
+    total = len(words)
+    x,y=[],[]
+    cum_req = 0
+    print(f'words length\tcount\tfrequency\tcumulative')
+    for i in range(1,24):
+        x.append(i)
+        c = counter[i]
+        freq = c / total
+        cum_req += freq
+        y.append(cum_req)
+        if c > 0:
+            print(f'{i}\t{c}\t{freq:.2f}\t{cum_req:.2f}')
+
+    # import matplotlib.pyplot as plt
+    # import seaborn as sns
+    # plt.plot(x, y, 'o-')
+    # plt.xlabel('word length')
+    # plt.ylabel('cumulative frequency')
+    # plt.title('')
+    # plt.grid()
+    # plt.show()
+
+
+    print('\nsentence length')
+    sentences = split_by_sentences(text)
+    counter = Counter([len(s.split()) for s in sentences])
+    total = len(sentences)
+    cum_req = 0
+    print(f'words length\tcount\tfrequency\tcumulative')
+    dots=True
+    rows=0
+    for i in range(1,70):
+        x.append(i)
+        c = counter[i]
+        freq = c / total
+        cum_req += freq
+        if c > 0:
+            print(f'{i}\t{c}\t{freq:.3f}\t{cum_req:.2f}')
+            dots=True
+            rows+=1
+        else:
+            if dots:
+                print(f'...\t...\t...\t...')
+                dots=False
+    print(counter)
+    print('rows',rows)
+

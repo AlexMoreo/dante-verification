@@ -60,10 +60,7 @@ class AuthorshipVerificator:
         positive_examples = y.sum()
         if positive_examples >= self.nfolds:
             print('optimizing {}'.format(self.classifier.__class__.__name__))
-            # if groups is None or len(np.unique(groups[y==1])):
             folds = list(StratifiedKFold(n_splits=self.nfolds).split(X, y))
-            # folds = list(GroupKFold(n_splits=self.nfolds).split(X,y,groups))
-
             self.estimator = GridSearchCV(self.classifier, param_grid=self.params, cv=folds, scoring=make_scorer(f1), n_jobs=-1)
         else:
             self.estimator = self.classifier

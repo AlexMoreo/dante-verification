@@ -13,7 +13,7 @@ import os
 # significant features in cross-topic authorship attribution [57].)  #we have cancelled the
 # TODO: inspect the impact of chi-squared correlations against positive-only (or positive and negative) correlations for feature selection
 # TODO: sentence length (Mendenhall-style) ?
-
+from src.data.features import FeatureExtractor
 
 for epistola in [1,2]:
 
