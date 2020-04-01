@@ -229,6 +229,11 @@ def _features_tfidf(documents, tfidf_vectorizer=None, min_df = 1, ngrams=(1,1)):
     return features, tfidf_vectorizer
 
 
+# We have implemented ngrams extration generically, following Sapkota et al. (ref [39] in the PAN 2015 overview), i.e.,
+# containing punctuation marks. However, this does not apply to this study since punctuation marks are filtered-out in
+# editions of Latin texts.
+# More recently, it was shown that character n-grams corresponding to word affixes and including punctuation
+# marks are the most significant features in cross-topic authorship attribution [57].
 def _features_ngrams(documents, ns=[4, 5], ngrams_vectorizer=None, min_df = 10, preserve_punctuation=True):
     doc_ngrams = ngrams_extractor(documents, ns, preserve_punctuation)
     return _features_tfidf(doc_ngrams, tfidf_vectorizer=ngrams_vectorizer, min_df = min_df)
@@ -507,6 +512,7 @@ class FeatureExtractor:
 
 
 
+
 if __name__=='__main__':
     from collections import Counter
 
@@ -594,4 +600,3 @@ if __name__=='__main__':
                 dots=False
     print(counter)
     print('rows',rows)
-
