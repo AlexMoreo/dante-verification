@@ -12,6 +12,7 @@ AUTHORS_CORPUS_II = ['Dante', 'BeneFlorentinus', 'BenvenutoDaImola', 'Boncompagn
                            'IulianusDeSpira', 'NicolaTrevet', 'PierDellaVigna', 'PietroAlighieri', 'RaimundusLullus',
                            'RyccardusDeSanctoGermano', 'ZonoDeMagnalis']
 
+
 def main():
     discarded = 0
     f1_scores = []
@@ -21,7 +22,7 @@ def main():
         print('='*80)
         print(f'Authorship Identification for {author} (complete {i}/{len(args.authors)})')
         print(f'Corpus {path}')
-        print('='*80)
+        print('-'*80)
 
         positive, negative, pos_files, neg_files, ep_text = load_latin_corpus(
             path, positive_author=author, unknown_target=args.unknown
@@ -50,13 +51,14 @@ def main():
         )
 
         Xtr, ytr, groups = feature_extractor.fit_transform(positive, negative)
+
+        print('Fitting the Verificator')
         av = AuthorshipVerificator(nfolds=10, estimator=LogisticRegression)
+        av.fit(Xtr, ytr, groups)
+
         if args.unknown:
             print(f'Checking for the hypothesis that {author} was the author of {args.unknown}')
             ep, ep_fragments = feature_extractor.transform(ep_text, return_fragments=True, window_size=3)
-
-            print('Fitting the Verificator')
-            av.fit(Xtr, ytr, groups)
             av.predict_proba(ep, args.unknown)
 
         if args.loo:
@@ -87,12 +89,14 @@ if __name__ == '__main__':
     # Training settings
     parser = argparse.ArgumentParser(description='Authorship verification for Epistola XIII')
     parser.add_argument('corpuspath', type=str, metavar='PATH',
-                        help=f'Path to the directory containing the corpus (documents must be named <author>_<texname>.txt')
+                        help=f'Path to the directory containing the corpus (documents must be named '
+                             f'<author>_<texname>.txt')
     parser.add_argument('positive', type=str, default="Dante",
-                        help= f'Positive author for the hypothesis (default "Dante"); set to "ALL" to check every author')
+                        help= f'Positive author for the hypothesis (default "Dante"); set to "ALL" to check '
+                              f'every author')
     parser.add_argument('--loo', default=False, action='store_true',
                         help='submit each binary classifier to leave-one-out validation')
-    parser.add_argument('--unknown', type=str, default=None,
+    parser.add_argument('--unknown', type=str, metavar='PATH', default=None,
                         help='path to the file of unknown paternity (default None)')
 
     args = parser.parse_args()
