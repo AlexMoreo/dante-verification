@@ -1,44 +1,15 @@
-from util import disable_sklearn_warnings
-from sklearn.metrics import f1_score
 from sklearn.metrics import make_scorer
-from sklearn.model_selection import GridSearchCV, LeaveOneOut, LeaveOneGroupOut, cross_val_score, GroupKFold, KFold, \
-    StratifiedKFold
+from sklearn.model_selection import GridSearchCV, LeaveOneOut, LeaveOneGroupOut, cross_val_score, StratifiedKFold
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import *
 from data.features import *
-
-class RandomVerificator:
-    def __init__(self): pass
-    def fit(self,positives,negatives):
-        pass
-    def predict(self,test):
-        return np.random.rand()
-
-def get_counters(true_labels, predicted_labels):
-    assert len(true_labels) == len(predicted_labels), "Format not consistent between true and predicted labels."
-    nd = len(true_labels)
-    tp = np.sum(predicted_labels[true_labels == 1])
-    fp = np.sum(predicted_labels[true_labels == 0])
-    fn = np.sum(true_labels[predicted_labels == 0])
-    tn = nd - (tp+fp+fn)
-    return tp,fp,fn,tn
-
-def f1_from_counters(tp,fp,fn,tn):
-    num = 2.0 * tp
-    den = 2.0 * tp + fp + fn
-    if den > 0: return num / den
-    # we define f1 to be 1 if den==0 since the classifier has correctly classified all instances as negative
-    return 1.0
-
-def f1(true_labels, predicted_labels):
-    tp, fp, fn, tn = get_counters(true_labels,predicted_labels)
-    return f1_from_counters(tp, fp, fn, tn )
+from util.evaluation import f1, get_counters
 
 
 class AuthorshipVerificator:
 
     def __init__(self, nfolds=10,
-                 params = {'C': np.logspace(-4,+4,9), 'class_weight':['balanced',None]},
+                 params={'C': np.logspace(-4, +4, 9), 'class_weight': ['balanced', None]},
                  estimator=SVC,
                  author_name=None):
         self.nfolds = nfolds
@@ -68,11 +39,8 @@ class AuthorshipVerificator:
         self.estimator.fit(X, y)
 
         if isinstance(self.estimator, GridSearchCV):
-            print('Best params: {}'.format(self.estimator.best_params_))
-            print('computing the cross-val score')
-            f1scores = self.estimator.best_score_
-            f1_mean, f1_std = f1scores.mean(), f1scores.std()
-            print('F1-measure={:.3f} (+-{:.3f} cv={})\n'.format(f1_mean, f1_std, f1scores))
+            f1_mean = self.estimator.best_score_.mean()
+            print(f'Best params: {self.estimator.best_params_} (cross-validation F1={f1_mean:.3f})')
             self.estimator = self.estimator.best_estimator_
 
         return self
@@ -81,11 +49,11 @@ class AuthorshipVerificator:
 
         if groups is None:
             print('Computing LOO without groups')
-            folds = list(LeaveOneOut().split(X,y))
+            folds = list(LeaveOneOut().split(X, y))
         else:
             print('Computing LOO with groups')
             logo = LeaveOneGroupOut()
-            folds=list(logo.split(X,y,groups))
+            folds = list(logo.split(X, y, groups))
             if test_lowest_index_only:
                 print('ignoring fragments')
                 folds = [(train, np.min(test, keepdims=True)) for train, test in folds]
@@ -116,7 +84,7 @@ class AuthorshipVerificator:
         return full_doc_prediction, None
 
     def predict_proba(self, test, epistola_name=''):
-        assert self.probability, 'svm is not calibrated'
+        assert hasattr(self, 'predict_proba'), 'the classifier is not calibrated'
         pred = self.estimator.predict_proba(test)
         full_doc_prediction = pred[0,1]
         print(f'{epistola_name} is from {self.author_name} with Probability {full_doc_prediction:.3f}')

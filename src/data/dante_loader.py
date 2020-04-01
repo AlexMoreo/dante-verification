@@ -1,14 +1,11 @@
 import os
 from os.path import join
-import re
 import collections
-
 
 
 # ------------------------------------------------------------------------
 # document loading routine
 # ------------------------------------------------------------------------
-
 def remove_pattern(doc, start_symbol, end_symbol, counter):
     assert counter[start_symbol] == counter[end_symbol], 'wrong number of {}{} found'.format(start_symbol,end_symbol)
     search = True
@@ -21,6 +18,7 @@ def remove_pattern(doc, start_symbol, end_symbol, counter):
             search = False
     return doc
 
+
 # removes citations in format:
 #    *latino*
 #    {volgare}
@@ -30,16 +28,30 @@ def remove_citations(doc):
     doc = remove_pattern(doc, start_symbol='{', end_symbol='}', counter=counter)
     return doc
 
-def load_texts(path, positive_author='Dante', unknown_target=None, train_skip_prefix='EpistolaXIII_'):
+
+def load_latin_corpus(path, positive_author='Dante', unknown_target=None, train_skip_prefix='Epistola'):
+    """
+    Function used to load the Corpus I and Corpus II for authorship verification (and validation) of the Epistola XIII.
+    The corpus is assumed to contain files named according to <author>_<text_name>.txt.
+    :param path: the path containing the texts, each named as <author>_<text_name>.txt
+    :param positive_author: the author that defines the positive class for verification
+    :param unknown_target: if specified, is the path to the unknown document whose paternity is to be check (w.r.t.
+    the positive_author)
+    :param train_skip_prefix: specify a prefix for documents that should be skipped
+    :return: a tuple containing the positive documents, negative documents, paths to positive documents, paths to
+    negative documents, and the unknown document if that was specified (otherwise an empty list)
+    """
     # load the training data (all documents but Epistolas 1 and 2)
     positive, negative = [], []
     files_positive, files_negative = [], []
-    authors   = []
+
+    authors = []
     ndocs=0
     for file in os.listdir(path):
         if file.startswith(train_skip_prefix): continue
-        file_clean = file.replace('.txt','')
-        author, textname = file_clean.split('_')[0],file_clean.split('_')[1]
+        if f'{path}/{file}' == unknown_target: continue
+        file_name = file.replace('.txt','')
+        author, textname = file_name.split('_')
         text = open(join(path,file), encoding= "utf8").read()
         text = remove_citations(text)
 
@@ -50,40 +62,21 @@ def load_texts(path, positive_author='Dante', unknown_target=None, train_skip_pr
             negative.append(text)
             files_negative.append(file)
         authors.append(author)
-        ndocs+=1
+        ndocs += 1
 
-    # load the test data (Epistolas 1 and 2)
+    # load the unknown document (if requested))
     if unknown_target:
-        if isinstance(unknown_target, str):
-            unknown_target = [unknown_target]
-        unknowns = []
-        for unknown_text in unknown_target:
-            unknown = open(join(path, unknown_text), encoding="utf8").read()
-            unknown = remove_citations(unknown)
-            unknowns.append(unknown)
-        if len(unknowns) == 1: unknowns = unknowns[0]
-        return positive, negative, files_positive, files_negative, unknowns
-
+        unknown = open(unknown_target, encoding="utf8").read()
+        unknown = [remove_citations(unknown)]
     else:
-        return positive, negative, files_positive, files_negative
+        unknown = []
+    return positive, negative, files_positive, files_negative, unknown
 
 
-def ___list_texts(path):
-    authors   = {}
-    for file in os.listdir(path):
-        if file.startswith('EpistolaXIII_'): continue
-        file_clean = file.replace('.txt','')
-        author, textname = file_clean.split('_')[0],file_clean.split('_')[1]
-        if author not in authors:
-            authors[author] = []
-        authors[author].append(textname)
-
-    author_order = sorted(authors.keys())
-    for author in author_order:
-        print('{}:\t{}'.format(author,', '.join(authors[author])))
-
-
-
+def list_authors(path, skip_prefix, skip_authors=['Misc']):
+    authors = [file.split('_')[0] for file in os.listdir(path) if not file.startswith(skip_prefix)]
+    authors = [author for author in authors if author not in skip_authors]
+    return sorted(set(authors))
 
 
 
