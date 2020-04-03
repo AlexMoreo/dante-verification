@@ -1,6 +1,6 @@
 from sklearn.metrics import make_scorer
 from sklearn.model_selection import GridSearchCV, LeaveOneOut, LeaveOneGroupOut, cross_val_score, StratifiedKFold
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression, LogisticRegressionCV
 from sklearn.svm import *
 from data.features import *
 from util.evaluation import f1, get_counters
@@ -10,29 +10,21 @@ class AuthorshipVerificator:
 
     def __init__(self, nfolds=10,
                  params={'C': np.logspace(-4, +4, 9), 'class_weight': ['balanced', None]},
-                 estimator=SVC,
                  author_name=None):
         self.nfolds = nfolds
         self.params = params
         self.author_name = author_name if author_name else 'this author'
-        if estimator is SVC:
-            self.params['kernel'] = ['linear', 'rbf']
-            self.probability = True
-            self.classifier = estimator(probability=self.probability)
-        elif estimator is LinearSVC:
-            self.probability = False
-            self.classifier = estimator()
-        elif estimator is LogisticRegression:
-            self.probability = True
-            self.classifier = LogisticRegression()
+        self.classifier = LogisticRegression()
 
-    def fit(self,X,y,groups=None):
-        if not isinstance(y,np.ndarray): y=np.array(y)
+    def fit(self, X, y):
+        y = np.asarray(y)
         positive_examples = y.sum()
         if positive_examples >= self.nfolds:
             print('optimizing {}'.format(self.classifier.__class__.__name__))
             folds = list(StratifiedKFold(n_splits=self.nfolds).split(X, y))
-            self.estimator = GridSearchCV(self.classifier, param_grid=self.params, cv=folds, scoring=make_scorer(f1), n_jobs=-1)
+            self.estimator = GridSearchCV(
+                self.classifier, param_grid=self.params, cv=folds, scoring=make_scorer(f1), n_jobs=-1
+            )
         else:
             self.estimator = self.classifier
 
@@ -46,7 +38,6 @@ class AuthorshipVerificator:
         return self
 
     def leave_one_out(self, X, y, files, groups=None, test_lowest_index_only=True, counters=False):
-
         if groups is None:
             print('Computing LOO without groups')
             folds = list(LeaveOneOut().split(X, y))
@@ -59,8 +50,8 @@ class AuthorshipVerificator:
                 folds = [(train, np.min(test, keepdims=True)) for train, test in folds]
 
         scores = cross_val_score(self.estimator, X, y, cv=folds, scoring=make_scorer(f1), n_jobs=-1)
-        missclassified = '\n'.join(files[scores==0].tolist())
-        print(scores)
+        missclassified = '\n'.join(files[scores == 0].tolist())
+        print('missclassified texts:')
         print(missclassified)
 
         if counters and test_lowest_index_only:
@@ -73,26 +64,24 @@ class AuthorshipVerificator:
         else:
             return scores.mean(), scores.std()
 
-    def predict(self, test, epistola_name=''):
+    def predict(self, test):
         pred = self.estimator.predict(test)
         full_doc_prediction = pred[0]
-        print('{} is from the same author: {}'.format(epistola_name, 'Yes' if full_doc_prediction == 1 else 'No'))
         if len(pred) > 1:
             fragment_predictions = pred[1:]
             print('fragments average {:.3f}, array={}'.format(fragment_predictions.mean(), fragment_predictions))
             return full_doc_prediction, fragment_predictions
-        return full_doc_prediction, None
+        return full_doc_prediction
 
-    def predict_proba(self, test, epistola_name=''):
+    def predict_proba(self, test):
         assert hasattr(self, 'predict_proba'), 'the classifier is not calibrated'
         pred = self.estimator.predict_proba(test)
         full_doc_prediction = pred[0,1]
-        print(f'{epistola_name} is from {self.author_name} with Probability {full_doc_prediction:.3f}')
         if len(pred) > 1:
             fragment_predictions = pred[1:,1]
             print('fragments average {:.3f}, array={}'.format(fragment_predictions.mean(), fragment_predictions))
             return full_doc_prediction, fragment_predictions
-        return full_doc_prediction, None
+        return full_doc_prediction, []
 
 
 

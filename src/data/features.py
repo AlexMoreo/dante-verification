@@ -6,7 +6,7 @@ from sklearn.feature_selection import chi2
 from sklearn.preprocessing import normalize
 from scipy.sparse import hstack, csr_matrix, issparse
 from nltk.corpus import stopwords
-from sklearn.externals.joblib import Parallel, delayed
+from joblib import Parallel, delayed
 
 
 latin_function_words = ['et',  'in',  'de',  'ad',  'non',  'ut', 'cum', 'per', 'a', 'sed', 'que', 'quia', 'ex', 'sic',
@@ -119,7 +119,7 @@ def _features_function_words_freq(documents, lang):
     """
     Extract features as the frequency (L1x1000) of the function words used in the documents
     :param documents: a list where each element is the text (string) of a document
-    :return: a np.array of shape (D,F) where D is len(documents) and F is len(function_words)
+    :return: a dictionary containing the resulting features, feature names, and taskname
     """
     features = []
     function_words = get_function_words(lang)
@@ -134,7 +134,7 @@ def _features_function_words_freq(documents, lang):
     f_names = [f'funcw::{f}' for f in function_words]
     F = np.array(features)
     print(f'task function words (#features={F.shape[1]}) [Done]')
-    return F, f_names
+    return {'features': F, 'f_names':f_names, 'task': 'functionwords'}
 
 
 def _features_conjugations_freq(documents, lang):
@@ -142,7 +142,7 @@ def _features_conjugations_freq(documents, lang):
     Extract features as the frequency (L1x1000) of the conjugations used in the documents. The method is heuristic, and
     actually searches for suffixes contained in the conjugation list.
     :param documents: a list where each element is the text (string) of a document
-    :return: a np.array of shape (D,F) where D is len(documents) and F is len(conjugations)
+    :return: a dictionary containing the resulting features, feature names, and taskname
     """
     features = []
     conjugations = get_conjugations(lang)
@@ -162,7 +162,7 @@ def _features_conjugations_freq(documents, lang):
     f_names = [f'conj::{f}' for f in conjugations]
     F = np.array(features)
     print(f'task conjugation features (#features={F.shape[1]}) [Done]')
-    return F, f_names
+    return {'features': F, 'f_names':f_names, 'task': 'conjugations'}
 
 
 def _features_Mendenhall(documents, upto=23):
@@ -170,7 +170,7 @@ def _features_Mendenhall(documents, upto=23):
     Extract features as the frequency (L1x1000) of the words' lengths used in the documents,
     following the idea behind Mendenhall's Characteristic Curve of Composition
     :param documents: a list where each element is the text (string) of a document
-    :return: a np.array of shape (D,F) where D is len(documents) and F is len(range of lengths considered)
+    :return: a dictionary containing the resulting features, feature names, and taskname
     """
     features = []
     for text in documents:
@@ -185,7 +185,7 @@ def _features_Mendenhall(documents, upto=23):
     f_names = [f'mendenhall::{c}' for c in range(1,upto)]
     F = np.array(features)
     print(f'task Mendenhall features (#features={F.shape[1]}) [Done]')
-    return F, f_names
+    return {'features': F, 'f_names':f_names, 'task': 'Mendenhall'}
 
 
 def _features_sentenceLengths(documents, downto=3, upto=70):
@@ -194,7 +194,7 @@ def _features_sentenceLengths(documents, downto=3, upto=70):
     :param documents: a list where each element is the text (string) of a document
     :param downto: minimal length considered
     :param upto: maximum length considered
-    :return: a np.array of shape (D,F) where D is len(documents) and F is len(range of lengths considered)
+    :return: a dictionary containing the resulting features, feature names, and taskname
     """
     features = []
     for text in documents:
@@ -212,15 +212,14 @@ def _features_sentenceLengths(documents, downto=3, upto=70):
     f_names = [f'sentlength::{c}' for c in range(downto, upto)]
     F = np.array(features)
     print(f'task sentence lengths (#features={F.shape[1]}) [Done]')
-    return F, f_names
+    return {'features': F, 'f_names':f_names, 'task': 'sentlength'}
 
 
 def _features_word_ngrams(documents, vectorizer=None, selector=None, y=None, feat_sel_ratio=1., min_df=1, ngrams=(1, 1)):
     """
     Extract features as tfidf matrix extracted from the documents
     :param documents: a list where each element is the text (string) of a document
-    :return: a tuple M,V, where M is an np.array of shape (D,F), with D being the len(documents) and F the number of
-    distinct words; and V is the TfidfVectorizer already fit
+    :return: a dictionary containing the resulting features, feature names, taskname, the vectorizer and the selector
     """
     if vectorizer is None:
         vectorizer = TfidfVectorizer(sublinear_tf=True, min_df=min_df, ngram_range=ngrams)
@@ -238,7 +237,13 @@ def _features_word_ngrams(documents, vectorizer=None, selector=None, y=None, fea
         f_names = [f_names[i] for i in selector.get_support(indices=True)]
 
     print(f'task ngrams and feature selection (#features={features.shape[1]}) [Done]')
-    return features, f_names, vectorizer, selector
+    return {
+        'features': features,
+        'f_names': f_names,
+        'task': '_wngrams_task',
+        'vectorizer': vectorizer,
+        'selector': selector
+    }
 
 
 def _features_char_ngrams(documents, vectorizer=None, selector=None, y=None, feat_sel_ratio=1., min_df=10, preserve_punctuation=True, ngrams=[4, 5]):
@@ -253,24 +258,27 @@ def _features_char_ngrams(documents, vectorizer=None, selector=None, y=None, fea
     :param vectorizer: the tfidf_vectorizer to use if already fit; if None, a new one will be instantiated and fit
     :param min_df: minumum number of occurrences needed for the ngram to be taken
     :param preserve_punctuation: whether or not to preserve punctuation marks
-    :return: see _features_tfidf
+    :return: a dictionary containing the resulting features, feature names, taskname, the vectorizer and the selector
     """
     doc_ngrams = ngrams_extractor(documents, ngrams, preserve_punctuation)
-    return _features_word_ngrams(
+    outs = _features_word_ngrams(
         doc_ngrams,
         vectorizer=vectorizer,
         selector=selector, y=y, feat_sel_ratio=feat_sel_ratio,
         min_df=min_df
     )
+    outs['task'] = '_cngrams_task'
+    return outs
 
 
 def ngrams_extractor(documents, ns=[4, 5], preserve_punctuation=True):
-    if not isinstance(ns, list): ns=[ns]
+    if not isinstance(ns, list):
+        ns=[ns]
     ns = sorted(np.unique(ns).tolist())
 
     list_ngrams = []
     for doc in documents:
-        if preserve_punctuation == False:
+        if not preserve_punctuation:
             doc = ' '.join(tokenize(doc))
         doc_ngrams = []
         for ni in ns:
@@ -287,7 +295,7 @@ def _feature_selection(X, y, tfidf_feat_selection_ratio):
     :param X: a document by (sparse) features matrix
     :param y: the supervised ndarray containing the class labels
     :param tfidf_feat_selection_ratio: a proportion of features to be taken
-    :return: the reduced matrix and the feature selector fit
+    :return: the feature selector fit
     """
     nF = X.shape[1]
     num_feats = int(tfidf_feat_selection_ratio * nF)
@@ -321,7 +329,7 @@ class FeatureExtractor:
                  window_size=5,
                  verbose=True):
         """
-        Applies stlystic feature extraction. Features include:
+        Applies stilystic feature extraction. Features include:
         :param function_words_freq: add the frequency of function words as features
         :param conjugations_freq: add the frequency of regular conjugations as features
         :param features_Mendenhall: add the frequencies of the words' lengths as features
@@ -437,113 +445,31 @@ class FeatureExtractor:
             self.feature_names = []
         self.feature_names.extend(feat_names)
 
-    def _transform(self, documents, y=None, fit=False):
-        # initialize the document-by-feature vector
-        X = np.empty((len(documents), 0))
-
-        # dense feature extraction functions
-        if self.function_words_freq:
-            F, f_names = _features_function_words_freq(documents, self.function_words_freq)
-            X = self._addfeatures(X, F, f_names if fit else None)
-            self._print(f'adding function words features: {X.shape[1]} features')
-
-        if self.conjugations_freq:
-            F, f_names = _features_conjugations_freq(documents, self.conjugations_freq)
-            X = self._addfeatures(X, F, f_names if fit else None)
-            self._print(f'adding conjugation features: {X.shape[1]} features')
-
-        if self.features_Mendenhall:
-            F, f_names = _features_Mendenhall(documents)
-            X = self._addfeatures(X, F, f_names if fit else None)
-            self._print(f'adding Mendenhall words features: {X.shape[1]} features')
-
-        if self.features_sentenceLengths:
-            F, f_names = _features_sentenceLengths(documents)
-            X = self._addfeatures(X, F, f_names if fit else None)
-            self._print(f'adding sentence lengths features: {X.shape[1]} features')
-
-        # sparse feature extraction functions
-        if self.wngrams:
-            if fit:
-                X_features, self.wngrams_vectorizer = _features_word_ngrams(documents, ngrams=self.wngrams_range)
-                index2word = {i: w for w, i in self.wngrams_vectorizer.vocabulary_.items()}
-                f_names = [f'tfidf::{index2word[i]}' for i in range(len(index2word))]
-            else:
-                X_features, _ = _features_word_ngrams(documents, self.wngrams_vectorizer)
-                f_names = None
-
-            if self.feature_selection_ratio < 1.:
-                if self.verbose: print('feature selection')
-                if fit:
-                    X_features, self.feat_sel_tfidf = _feature_selection(X_features, y, self.feature_selection_ratio)
-                    f_names = [f_names[i] for i in self.feat_sel_tfidf.get_support(indices=True)]
-                else:
-                    X_features = self.feat_sel_tfidf.transform(X_features)
-            X = self._addfeatures(_tocsr(X), X_features, f_names)
-            self._print(f'adding tfidf words features: {X.shape[1]} features')
-
-        if self.cngrams:
-            if fit:
-                X_features, self.cngrams_vectorizer = _features_char_ngrams(
-                    documents, self.cngrams_range, preserve_punctuation=self.preserve_punctuation
-                )
-                index2word = {i: w for w, i in self.cngrams_vectorizer.vocabulary_.items()}
-                f_names = [f'ngram::{index2word[i]}' for i in range(len(index2word))]
-            else:
-                X_features, _ = _features_char_ngrams(
-                    documents, self.cngrams_range, vectorizer=self.cngrams_vectorizer,
-                    preserve_punctuation=self.preserve_punctuation
-                )
-                f_names = None
-
-            if self.feature_selection_ratio < 1.:
-                if self.verbose: print('feature selection')
-                if fit:
-                    X_features, self.cngrams_selector = _feature_selection(X_features, y, self.feature_selection_ratio)
-                    f_names = [f_names[i] for i in self.cngrams_selector.get_support(indices=True)]
-                else:
-                    X_features = self.cngrams_selector.transform(X_features)
-
-            X = self._addfeatures(_tocsr(X), X_features, f_names)
-            self._print(f'adding ngrams character features: {X.shape[1]} features')
-
-        if fit:
-            self.feature_names = np.asarray(self.feature_names)
-
-        self._print(f'X shape (#documents,#features): {X.shape}')
-
-        return X
-
     def _transform_parallel(self, documents, y=None, fit=False, n_jobs=-1):
         # initialize the document-by-feature vector
         X = np.empty((len(documents), 0))
 
         tasks = []
+
         # dense feature extraction functions
         if self.function_words_freq:
-            tasks.append((_features_function_words_freq, (documents, self.function_words_freq)))
+            tasks.append((_features_function_words_freq, {'documents': documents, 'lang': self.function_words_freq}))
 
         if self.conjugations_freq:
-            tasks.append((_features_conjugations_freq, (documents, self.conjugations_freq)))
+            tasks.append((_features_conjugations_freq, {'documents': documents, 'lang': self.conjugations_freq}))
 
         if self.features_Mendenhall:
-            tasks.append((_features_Mendenhall, (documents, 23)))
+            tasks.append((_features_Mendenhall, {'documents': documents, 'upto': 23}))
 
         if self.features_sentenceLengths:
-            tasks.append((_features_sentenceLengths, (documents, 3, 70)))
-
-        self._print('extracting dense features in parallel')
-        outs = Parallel(n_jobs=n_jobs)(delayed(task)(*params) for task, params in tasks)
-        for F, feat_names in outs:
-            X = self._addfeatures(X, F, feat_names if fit else None)
+            tasks.append((_features_sentenceLengths, {'documents': documents, 'downto': 3, 'upto': 70}))
 
         # sparse feature extraction functions
-        tasks = []
         if self.wngrams:
             if not fit and self.wngrams_vectorizer is None:
                 raise ValueError('transform called before fit')
 
-            params={
+            params = {
                 'documents': documents,
                 'vectorizer': self.wngrams_vectorizer,
                 'selector': self.wngrams_selector,
@@ -557,7 +483,7 @@ class FeatureExtractor:
             if not fit and self.cngrams_vectorizer is None:
                 raise ValueError('transform called before fit')
 
-            params={
+            params = {
                 'documents': documents,
                 'vectorizer': self.cngrams_vectorizer,
                 'selector': self.cngrams_selector,
@@ -568,15 +494,22 @@ class FeatureExtractor:
             }
             tasks.append((_features_char_ngrams, params))
 
-        self._print('extracting sparse features in parallel')
+        self._print('extracting features in parallel')
         outs = Parallel(n_jobs=n_jobs)(delayed(task)(**params) for task, params in tasks)
-        for F, feat_names, vectorizer, selector in outs:
-            X = self._addfeatures(_tocsr(X), F, feat_names if fit else None)
-            if fit:
-                if self.wngrams and self.wngrams_vectorizer is None:
-                    self.wngrams_vectorizer, self.wngrams_selector = vectorizer, selector
-                elif self.cngrams and self.cngrams_vectorizer is None:
-                    self.cngrams_vectorizer, self.cngrams_selector = vectorizer, selector
+
+        # gather the tasks' outputs
+        for out in outs:
+            taskname = out['task']
+            if taskname not in {'_wngrams_task', '_cngrams_task'}:
+                X = self._addfeatures(X, out['features'], out['f_names'] if fit else None)
+            else:
+                X = self._addfeatures(_tocsr(X), out['features'], out['f_names'] if fit else None)
+                if fit:
+                    vectorizer, selector = out['vectorizer'], out['selector']
+                    if taskname == '_wngrams_task' and self.wngrams_vectorizer is None:
+                        self.wngrams_vectorizer, self.wngrams_selector = vectorizer, selector
+                    elif taskname == '_cngrams_task' and self.cngrams_vectorizer is None:
+                        self.cngrams_vectorizer, self.cngrams_selector = vectorizer, selector
 
         if fit:
             self.feature_names = np.asarray(self.feature_names)

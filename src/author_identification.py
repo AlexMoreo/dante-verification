@@ -1,3 +1,4 @@
+import util._hide_sklearn_warnings
 from sklearn.linear_model import LogisticRegression
 from data.dante_loader import load_latin_corpus, list_authors
 from data.features import *
@@ -14,6 +15,7 @@ AUTHORS_CORPUS_II = ['Dante', 'BeneFlorentinus', 'BenvenutoDaImola', 'Boncompagn
 
 
 def main():
+    log = open(args.log, 'wt')
     discarded = 0
     f1_scores = []
     counters = []
@@ -30,6 +32,7 @@ def main():
         files = np.asarray(pos_files + neg_files)
         if len(positive) < 2:
             discarded += 1
+            print(f'discarding analysis for {author} which has only {len(positive)} documents')
             continue
 
         n_full_docs = len(positive) + len(negative)
@@ -53,13 +56,14 @@ def main():
         Xtr, ytr, groups = feature_extractor.fit_transform(positive, negative)
 
         print('Fitting the Verificator')
-        av = AuthorshipVerificator(nfolds=10, estimator=LogisticRegression)
-        av.fit(Xtr, ytr, groups)
+        av = AuthorshipVerificator(nfolds=10)
+        av.fit(Xtr, ytr)
 
         if args.unknown:
             print(f'Checking for the hypothesis that {author} was the author of {args.unknown}')
             ep, ep_fragments = feature_extractor.transform(ep_text, return_fragments=True, window_size=3)
-            av.predict_proba(ep, args.unknown)
+            pred, _ = av.predict_proba(ep)
+            tee(f'{args.unknown}: Posterior probability for {author} is {pred:.3f}', log)
 
         if args.loo:
             print('Validating the Verificator (Leave-One-Out)')
@@ -68,7 +72,7 @@ def main():
             )
             f1_scores.append(f1_from_counters(tp, fp, fn, tn))
             counters.append((tp, fp, fn, tn))
-            print(f'F1 for {author} = {f1_scores[-1]:.3f}')
+            tee(f'F1 for {author} = {f1_scores[-1]:.3f}', log)
 
     if args.loo:
         print(f'Computing macro- and micro-averages (discarded {discarded}/{len(args.authors)})')
@@ -78,9 +82,16 @@ def main():
         macro_f1 = f1_scores.mean()
         micro_f1 = f1_from_counters(*counters.sum(axis=0).tolist())
 
-        print(f'Macro-F1 = {macro_f1:.3f}')
-        print(f'Micro-F1 = {micro_f1:.3f}')
+        tee(f'LOO Macro-F1 = {macro_f1:.3f}', log)
+        tee(f'LOO Micro-F1 = {micro_f1:.3f}', log)
         print()
+
+    log.close()
+
+def tee(msg, log):
+    print(msg)
+    log.write(f'{msg}\n')
+    log.flush()
 
 
 if __name__ == '__main__':
@@ -88,16 +99,18 @@ if __name__ == '__main__':
 
     # Training settings
     parser = argparse.ArgumentParser(description='Authorship verification for Epistola XIII')
-    parser.add_argument('corpuspath', type=str, metavar='PATH',
+    parser.add_argument('corpuspath', type=str, metavar='CORPUSPATH',
                         help=f'Path to the directory containing the corpus (documents must be named '
-                             f'<author>_<texname>.txt')
-    parser.add_argument('positive', type=str, default="Dante",
+                             f'<author>_<texname>.txt)')
+    parser.add_argument('positive', type=str, default="Dante", metavar='AUTHOR',
                         help= f'Positive author for the hypothesis (default "Dante"); set to "ALL" to check '
                               f'every author')
     parser.add_argument('--loo', default=False, action='store_true',
                         help='submit each binary classifier to leave-one-out validation')
     parser.add_argument('--unknown', type=str, metavar='PATH', default=None,
                         help='path to the file of unknown paternity (default None)')
+    parser.add_argument('--log', type=str, metavar='PATH', default='./results.txt',
+                        help='path to the log file where to write the results (default ./results.txt)')
 
     args = parser.parse_args()
 
@@ -110,6 +123,7 @@ if __name__ == '__main__':
         args.authors = [args.positive]
 
     assert args.unknown or args.loo, 'error: nor an unknown document, nor LOO have been requested. Nothing to do.'
-    assert args.unknown is None or os.path.exists(args.unknown), 'unknown file does not exist'
+    assert os.path.exists(args.corpuspath), f'corpus path {args.corpuspath} does not exist'
+    assert args.unknown is None or os.path.exists(args.unknown), '"unknown file" does not exist'
 
     main()
