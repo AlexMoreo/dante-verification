@@ -15,8 +15,8 @@ The experiments have been run using the following packages (older versions might
 
 
 ## Disclaimer:
-The dataset is not distributed in this version. We have asked the Editors for permission to publish the corpus.
-We are waiting for some of these responses to arrive.
+The dataset is not distributed in this version. We have asked the Editors of each document for permission to publish the corpus.
+We are waiting for some of these responses to arrive. 
 
 ## Running the Experiments
 The script in __./src/author_identification.py__ executes the experiments. This is the script syntax (--help):
