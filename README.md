@@ -1,8 +1,6 @@
 # Authorship Verification for Medieval Latin 
 
-Code to reproduce the experiments reported in the papers
-["The Epistle to Cangrande Through the Lens of Computational Authorship Verification"](https://link.springer.com/chapter/10.1007/978-3-030-30754-7_15)
-and 
+Code to reproduce the experiments reported in the paper
 ["L’Epistola a Cangrande al vaglio della Computational Authorship Verification: Risultati preliminari (con una postilla sulla cosiddetta XIV Epistola di Dante Alighieri)"](https://www.academia.edu/42297516/L_Epistola_a_Cangrande_al_vaglio_della_Computational_Authorship_Verification_risultati_preliminari_con_una_postilla_sulla_cosiddetta_XIV_Epistola_di_Dante_Alighieri_in_Nuove_inchieste_sull_Epistola_a_Cangrande_a_c._di_A._Casadei_Pisa_Pisa_University_Press_pp._153-192)
 
 ## Requirements:
