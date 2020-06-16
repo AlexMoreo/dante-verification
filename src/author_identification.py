@@ -57,7 +57,7 @@ def main():
 
         print('Fitting the Verificator')
         if args.C is None:
-            params = {'C': np.logspace(-4, +3, 8)}
+            params = {'C': np.logspace(-3, +3, 7)}
             C = 1.
         else:
             params = None

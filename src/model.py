@@ -36,8 +36,8 @@ class AuthorshipVerificator:
             print(f'Best params: {self.estimator.best_params_} (cross-validation F1={f1_mean:.3f})')
             self.estimator = self.estimator.best_estimator_
 
-        self.estimator = CalibratedClassifierCV(base_estimator=self.estimator, cv=self.nfolds, ensemble=False)
-        self.estimator.fit(X, y)
+        #self.estimator = CalibratedClassifierCV(base_estimator=self.estimator, cv=self.nfolds, ensemble=False)
+        #self.estimator.fit(X, y)
 
         return self
 
