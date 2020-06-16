@@ -56,7 +56,16 @@ def main():
         Xtr, ytr, groups = feature_extractor.fit_transform(positive, negative)
 
         print('Fitting the Verificator')
-        av = AuthorshipVerificator(nfolds=10)
+        if args.C is None:
+            params = {'C': np.logspace(-4, +3, 8)}
+            C = 1.
+        else:
+            params = None
+            C = args.C
+
+        from sklearn.calibration import CalibratedClassifierCV
+
+        av = AuthorshipVerificator(C=C, params=params)
         av.fit(Xtr, ytr)
 
         if args.unknown:
@@ -73,6 +82,7 @@ def main():
             f1_scores.append(f1_from_counters(tp, fp, fn, tn))
             counters.append((tp, fp, fn, tn))
             tee(f'F1 for {author} = {f1_scores[-1]:.3f}', log)
+            print(f'TP={tp} FP={fp} FN={fn} TN={tn}')
 
     if args.loo:
         print(f'Computing macro- and micro-averages (discarded {discarded}/{len(args.authors)})')
@@ -87,6 +97,7 @@ def main():
         print()
 
     log.close()
+
 
 def tee(msg, log):
     print(msg)
@@ -111,6 +122,8 @@ if __name__ == '__main__':
                         help='path to the file of unknown paternity (default None)')
     parser.add_argument('--log', type=str, metavar='PATH', default='./results.txt',
                         help='path to the log file where to write the results (default ./results.txt)')
+    parser.add_argument('--C', type=float, metavar='C', default=None,
+                        help='set the parameter C (trade off between error and margin) or leave as None to optimize')
 
     args = parser.parse_args()
 
