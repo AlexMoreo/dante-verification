@@ -4,6 +4,7 @@ from data.dante_loader import load_latin_corpus, list_authors
 from data.features import *
 from model import AuthorshipVerificator
 from util.evaluation import f1_from_counters
+from sklearn.calibration import CalibratedClassifierCV
 import argparse
 
 AUTHORS_CORPUS_I = ['Dante', 'ClaraAssisiensis', 'GiovanniBoccaccio', 'GuidoFaba', 'PierDellaVigna']
@@ -62,8 +63,6 @@ def main():
         else:
             params = None
             C = args.C
-
-        from sklearn.calibration import CalibratedClassifierCV
 
         av = AuthorshipVerificator(C=C, params=params)
         av.fit(Xtr, ytr)
