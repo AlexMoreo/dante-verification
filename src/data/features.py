@@ -367,6 +367,7 @@ class FeatureExtractor:
         self.feature_names = None
         self.wngrams_vectorizer = self.wngrams_selector = None
         self.cngrams_vectorizer = self.cngrams_selector = None
+        self.feature_range = {}
 
     def fit_transform(self, positives, negatives):
         documents = positives + negatives
@@ -423,10 +424,14 @@ class FeatureExtractor:
         else:
             return TEST
 
-    def _addfeatures(self, X, F, feat_names=None):
+    def _addfeatures(self, X, F, feat_set_name, feat_names=None):
         if self.normalize_features:
             normalize(F, axis=1, copy=False)
         self._register_feature_names(feat_names)
+
+        last_col, n_cols = X.shape[1], F.shape[1]
+        self.feature_range[feat_set_name] = slice(last_col, last_col+n_cols)
+        print('adding feat-set slice ', feat_set_name, self.feature_range[feat_set_name])
 
         if issparse(F):
             return hstack((X, F))  # sparse
@@ -444,6 +449,16 @@ class FeatureExtractor:
         if self.feature_names is None:
             self.feature_names = []
         self.feature_names.extend(feat_names)
+
+    def get_feature_set(self, X, name):
+        assert name in self.feature_range, 'unknown feature set name'
+        return X[:,self.feature_range[name]]
+
+    def get_feature_set_names(self):
+        return list(self.feature_range.keys())
+
+    def get_feature_names(self):
+        return self.feature_names
 
     def _transform_parallel(self, documents, y=None, fit=False, n_jobs=-1):
         # initialize the document-by-feature vector
@@ -501,9 +516,9 @@ class FeatureExtractor:
         for out in outs:
             taskname = out['task']
             if taskname not in {'_wngrams_task', '_cngrams_task'}:
-                X = self._addfeatures(X, out['features'], out['f_names'] if fit else None)
+                X = self._addfeatures(X, out['features'], taskname, out['f_names'] if fit else None)
             else:
-                X = self._addfeatures(_tocsr(X), out['features'], out['f_names'] if fit else None)
+                X = self._addfeatures(_tocsr(X), out['features'], taskname, out['f_names'] if fit else None)
                 if fit:
                     vectorizer, selector = out['vectorizer'], out['selector']
                     if taskname == '_wngrams_task' and self.wngrams_vectorizer is None:
