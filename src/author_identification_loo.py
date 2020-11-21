@@ -14,7 +14,7 @@ AUTHORS_CORPUS_II = ['Dante', 'BeneFlorentinus', 'BenvenutoDaImola', 'Boncompagn
                            'RyccardusDeSanctoGermano', 'ZonoDeMagnalis']
 
 
-DEBUG_MODE = False
+DEBUG_MODE = True
 
 
 def main():
@@ -57,7 +57,8 @@ def main():
         Xtr, ytr, groups = feature_extractor.fit_transform(positive, negative)
 
         print('Fitting the Verificator')
-        params = {'C': np.logspace(0, 1, 2)} if DEBUG_MODE else {'C': np.logspace(-3, +3, 7)}
+        #params = {'C': np.logspace(0, 1, 2)} if DEBUG_MODE else {'C': np.logspace(-3, +3, 7)}
+        params = {'C': np.logspace(0, 1, 2)} if DEBUG_MODE else {'C': [1,10,100,1000,0.1,0.01,0.001]}
 
         slice_charngrams = feature_extractor.feature_range['_cngrams_task']
         slice_wordngrams = feature_extractor.feature_range['_wngrams_task']
@@ -66,8 +67,8 @@ def main():
         else:
             slice_first, slice_second = slice_wordngrams, slice_charngrams
         av = Pipeline([
-            ('featsel_cngrams', RangeFeatureSelector(slice_second, 0.1)),
-            ('featsel_wngrams', RangeFeatureSelector(slice_first, 0.1)),
+            ('featsel_cngrams', RangeFeatureSelector(slice_second, 0.05)),
+            ('featsel_wngrams', RangeFeatureSelector(slice_first, 0.05)),
             ('av', AuthorshipVerificator(C=1, param_grid=params))
         ])
 
@@ -115,8 +116,9 @@ if __name__ == '__main__':
     parser.add_argument('positive', type=str, default="Dante", metavar='AUTHOR',
                         help= f'Positive author for the hypothesis (default "Dante"); set to "ALL" to check '
                               f'every author')
-    parser.add_argument('--log', type=str, metavar='PATH', default='./results.txt',
-                        help='path to the log file where to write the results (default ./results.txt)')
+    parser.add_argument('--log', type=str, metavar='PATH', default=None,
+                        help='path to the log file where to write the results '
+                             '(if not specified, then ./results_{corpuspath.name})')
 
     args = parser.parse_args()
 

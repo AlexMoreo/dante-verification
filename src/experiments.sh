@@ -9,11 +9,11 @@ if [ ! -d $corpus ]; then
   rm ../MedLatin.zip
 fi
 
-PY="python3 author_identification.py"
+PY="python3 author_identification_loo.py"
 MedLatin1="../MedLatin/Corpora/MedLatin1"
 MedLatin2="../MedLatin/Corpora/MedLatin2"
 EP1="../MedLatin/Epistle/EpistolaXIII_1.txt"
 EP2="../MedLatin/Epistle/EpistolaXIII_2.txt"
 
-$PY $MedLatin1 ALL --unknown $EP1 --loo --log ./results_EP1.txt
-$PY $MedLatin2 ALL --unknown $EP2 --loo --log ./results_EP2.txt
+$PY $MedLatin1 ALL --log ./resultsLoo_EP1.txt
+$PY $MedLatin2 ALL --log ./resultsLoo_EP2.txt

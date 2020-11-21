@@ -19,7 +19,7 @@ class AuthorshipVerificator(BaseEstimator):
         self.author_name = author_name
 
     def fit(self, X, y):
-        self.classifier = LogisticRegression(C=self.C, class_weight='balanced')
+        self.classifier = LogisticRegression(C=self.C, class_weight='balanced', solver='lbfgs', max_iter=1000)
         y = np.asarray(y)
         positive_examples = y.sum()
         if positive_examples >= self.nfolds and self.param_grid is not None:
