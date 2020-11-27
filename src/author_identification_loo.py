@@ -1,111 +1,84 @@
-#import util._hide_sklearn_warnings
-from data.dante_loader import load_latin_corpus, list_authors
+from data.dante_loader import load_latin_corpus
 from data.features import *
-from model import AuthorshipVerificator, RangeFeatureSelector, leave_one_out
-from util.evaluation import f1_from_counters
+from model import AuthorshipVerificator
+import settings
+from util.evaluation import f1_from_counters, leave_one_out
 import argparse
-from sklearn.pipeline import Pipeline
-
-AUTHORS_CORPUS_I = ['Dante', 'ClaraAssisiensis', 'GiovanniBoccaccio', 'GuidoFaba', 'PierDellaVigna']
-AUTHORS_CORPUS_II = ['Dante', 'BeneFlorentinus', 'BenvenutoDaImola', 'BoncompagnoDaSigna', 'ClaraAssisiensis',
-                           'FilippoVillani', 'GiovanniBoccaccio', 'GiovanniDelVirgilio', 'GrazioloBambaglioli', 'GuidoDaPisa',
-                           'GuidoDeColumnis', 'GuidoFaba', 'IacobusDeVaragine', 'IohannesDeAppia', 'IohannesDePlanoCarpini',
-                           'IulianusDeSpira', 'NicolaTrevet', 'PierDellaVigna', 'PietroAlighieri', 'RaimundusLullus',
-                           'RyccardusDeSanctoGermano', 'ZonoDeMagnalis']
-
-
-DEBUG_MODE = True
-
+import pickle
+import helpers
+from helpers import tee
+import os
 
 def main():
     log = open(args.log, 'wt')
     discarded = 0
-    f1_scores = []
-    counters = []
+    f1_scores, acc_scores, counters = [], [], []
+    path = args.corpuspath
+
     for i, author in enumerate(args.authors):
-        path = args.corpuspath
+
         print('='*80)
-        print(f'Authorship Identification for {author} (complete {i}/{len(args.authors)})')
-        print(f'Corpus {path}')
+        print(f'[{args.corpus_name}] Authorship Identification for {author} (complete {i}/{len(args.authors)})')
         print('-'*80)
 
-        positive, negative, pos_files, neg_files, ep_text = load_latin_corpus(path, positive_author=author)
-        files = np.asarray(pos_files + neg_files)
-        if len(positive) < 2:
-            discarded += 1
-            print(f'discarding analysis for {author} which has only {len(positive)} documents')
-            continue
-
-        n_full_docs = len(positive) + len(negative)
-        print(f'read {n_full_docs} documents from {path}')
-
-        feature_extractor = FeatureExtractor(
-            function_words_freq='latin',
-            conjugations_freq='latin',
-            features_Mendenhall=True,
-            features_sentenceLengths=True,
-            feature_selection_ratio=0.05 if DEBUG_MODE else 1,
-            wordngrams=True, n_wordngrams=(1, 2),
-            charngrams=True, n_charngrams=(3, 4, 5),
-            preserve_punctuation=False,
-            split_documents=True,
-            split_policy=split_by_sentences,
-            window_size=3,
-            normalize_features=True
-        )
-
-        Xtr, ytr, groups = feature_extractor.fit_transform(positive, negative)
-
-        print('Fitting the Verificator')
-        #params = {'C': np.logspace(0, 1, 2)} if DEBUG_MODE else {'C': np.logspace(-3, +3, 7)}
-        params = {'C': np.logspace(0, 1, 2)} if DEBUG_MODE else {'C': [1,10,100,1000,0.1,0.01,0.001]}
-
-        slice_charngrams = feature_extractor.feature_range['_cngrams_task']
-        slice_wordngrams = feature_extractor.feature_range['_wngrams_task']
-        if slice_charngrams.start < slice_wordngrams.start:
-            slice_first, slice_second = slice_charngrams, slice_wordngrams
+        pickle_file = f'Corpus{args.corpus_name}.Author{author}.window3.GFS1.pickle'
+        if os.path.exists(pickle_file):
+            print(f'pickle {pickle_file} exists... loading it')
+            Xtr, ytr, groups, files, frange_chgrams, frange_wograms, fragments_range = pickle.load(open(pickle_file, 'rb'))
         else:
-            slice_first, slice_second = slice_wordngrams, slice_charngrams
-        av = Pipeline([
-            ('featsel_cngrams', RangeFeatureSelector(slice_second, 0.05)),
-            ('featsel_wngrams', RangeFeatureSelector(slice_first, 0.05)),
-            ('av', AuthorshipVerificator(C=1, param_grid=params))
-        ])
+            print(f'pickle {pickle_file} noes not exists... generating it')
+            positive, negative, pos_files, neg_files, ep_text = load_latin_corpus(path, positive_author=author)
+            files = np.asarray(pos_files + neg_files)
+            if len(positive) < 2:
+                discarded += 1
+                print(f'discarding analysis for {author} which has only {len(positive)} documents')
+                continue
+
+            n_full_docs = len(positive) + len(negative)
+            print(f'read {n_full_docs} documents from {path}')
+
+            feature_extractor = FeatureExtractor(**settings.config_loo)
+
+            Xtr, ytr, groups = feature_extractor.fit_transform(positive, negative)
+            frange_chgrams = feature_extractor.feature_range['_cngrams_task']
+            frange_wograms = feature_extractor.feature_range['_wngrams_task']
+            fragments_range = feature_extractor.fragments_range
+            pickle.dump((Xtr, ytr, groups, files, frange_chgrams, frange_wograms, fragments_range),
+                        open(pickle_file, 'wb'), pickle.HIGHEST_PROTOCOL)
+
+        learner = args.learner.lower()
+        av = AuthorshipVerificator(learner=learner, C=settings.DEFAULT_C, alpha=settings.DEFAULT_ALPHA,
+                                   param_grid=settings.param_grid[learner], class_weight=args.class_weight,
+                                   random_seed=settings.SEED, feat_selection_slices=[frange_chgrams, frange_wograms],
+                                   feat_selection_ratio=args.featsel)
 
         print('Validating the Verificator (Leave-One-Out)')
-        score_ave, score_std, tp, fp, fn, tn = leave_one_out(
-            av, Xtr, ytr, files, groups, test_lowest_index_only=True, counters=True
-        )
-        f1_scores.append(f1_from_counters(tp, fp, fn, tn))
+        accuracy, f1, tp, fp, fn, tn, missclassified = leave_one_out(av, Xtr, ytr, files, groups)
+        acc_scores.append(accuracy)
+        f1_scores.append(f1)
         counters.append((tp, fp, fn, tn))
-        tee(f'F1 for {author} = {f1_scores[-1]:.3f}', log)
-        print(f'TP={tp} FP={fp} FN={fn} TN={tn}')
+
+        tee(f'{author}',log)
+        tee(f'\tF1 = {f1:.3f}', log)
+        tee(f'\tAcc = {accuracy:.3f}', log)
+        tee(f'\tTP={tp} FP={fp} FN={fn} TN={tn}', log)
+        tee(f'\tErrors for {author}: {", ".join(missclassified)}', log)
 
     print(f'Computing macro- and micro-averages (discarded {discarded}/{len(args.authors)})')
-    f1_scores = np.array(f1_scores)
     counters = np.array(counters)
 
-    macro_f1 = f1_scores.mean()
+    acc_mean = np.array(acc_scores).mean()
+    macro_f1 = np.array(f1_scores).mean()
     micro_f1 = f1_from_counters(*counters.sum(axis=0).tolist())
 
     tee(f'LOO Macro-F1 = {macro_f1:.3f}', log)
     tee(f'LOO Micro-F1 = {micro_f1:.3f}', log)
-    print()
+    tee(f'LOO Accuracy = {acc_mean:.3f}', log)
 
     log.close()
 
-    if DEBUG_MODE:
-        print('DEBUG_MODE ON')
-
-
-def tee(msg, log):
-    print(msg)
-    log.write(f'{msg}\n')
-    log.flush()
-
 
 if __name__ == '__main__':
-    import os
 
     # Training settings
     parser = argparse.ArgumentParser(description='Authorship verification for MedLatin '
@@ -117,20 +90,23 @@ if __name__ == '__main__':
                         help= f'Positive author for the hypothesis (default "Dante"); set to "ALL" to check '
                               f'every author')
     parser.add_argument('--log', type=str, metavar='PATH', default=None,
-                        help='path to the log file where to write the results '
-                             '(if not specified, then ./results_{corpuspath.name})')
+                        help='path to the log file where to write the results (if not specified, then the name is'
+                             'automatically generated from the arguments and stored in ../results/)')
+    parser.add_argument('--featsel', default=0.1, metavar='FEAT_SEL_RATIO',
+                        help=f'feature selection ratio for char- and word-ngrams')
+    parser.add_argument('--class_weight', type=str, default=settings.CLASS_WEIGHT, metavar='CLASS_WEIGHT',
+                        help=f"whether or not to reweight classes' importance")
+    parser.add_argument('--learner', type=str, default='lr', metavar='LEARNER',
+                        help=f"classification learner (lr, svm, mnb)")
 
     args = parser.parse_args()
 
-    if args.positive == 'ALL':
-        args.authors = list_authors(args.corpuspath, skip_prefix='Epistola')
-    else:
-        if (args.positive not in AUTHORS_CORPUS_I) and (args.positive in AUTHORS_CORPUS_II):
-            print(f'warning: author {args.positive} is not in the known list of authors for CORPUS I nor CORPUS II')
-        assert args.positive in list_authors(args.corpuspath, skip_prefix='Epistola'), 'unexpected author'
-        args.authors = [args.positive]
-
-    assert os.path.exists(args.corpuspath), f'corpus path {args.corpuspath} does not exist'
+    helpers.check_author(args)
+    helpers.check_feat_sel_range(args)
+    helpers.check_class_weight(args)
+    helpers.check_corpus_path(args)
+    helpers.check_learner(args)
+    helpers.check_log_loo(args)
 
     main()
 

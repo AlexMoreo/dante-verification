@@ -372,8 +372,8 @@ class FeatureExtractor:
     def fit_transform(self, positives, negatives):
         documents = positives + negatives
         authors = [1]*len(positives) + [0]*len(negatives)
-        n_original_docs = len(documents)
-        groups = list(range(n_original_docs))
+        self.n_original_docs = len(documents)
+        groups = list(range(self.n_original_docs))
 
         if self.split_documents:
             doc_fragments, authors_fragments, groups_fragments = splitter(
@@ -383,7 +383,7 @@ class FeatureExtractor:
             authors.extend(authors_fragments)
             groups.extend(groups_fragments)
             self._print(f'splitting documents: {len(doc_fragments)} segments + '
-                        f'{n_original_docs} documents = '
+                        f'{self.n_original_docs} documents = '
                         f'{len(documents)} total')
 
         # represent the target vector
@@ -398,10 +398,11 @@ class FeatureExtractor:
                 f'features_Mendenhall={self.features_Mendenhall} tfidf={self.wngrams} '
                 f'split_documents={self.split_documents}, split_policy={self.split_policy.__name__}'
             )
-            print(f'number of training (full) documents: {n_original_docs}')
+            print(f'number of training (full) documents: {self.n_original_docs}')
             print(f'y prevalence: {y.sum()}/{len(y)} {y.mean() * 100:.2f}%')
             print()
 
+        self.fragments_range = slice(self.n_original_docs, len(y))
         return X, y, groups
 
     def transform(self, test, return_fragments=False, window_size=-1, avoid_splitting=False):
@@ -520,11 +521,10 @@ class FeatureExtractor:
             else:
                 X = self._addfeatures(_tocsr(X), out['features'], taskname, out['f_names'] if fit else None)
                 if fit:
-                    vectorizer, selector = out['vectorizer'], out['selector']
-                    if taskname == '_wngrams_task' and self.wngrams_vectorizer is None:
-                        self.wngrams_vectorizer, self.wngrams_selector = vectorizer, selector
-                    elif taskname == '_cngrams_task' and self.cngrams_vectorizer is None:
-                        self.cngrams_vectorizer, self.cngrams_selector = vectorizer, selector
+                    if taskname == '_wngrams_task':
+                        self.wngrams_vectorizer, self.wngrams_selector = out['vectorizer'], out['selector']
+                    elif taskname == '_cngrams_task':
+                        self.cngrams_vectorizer, self.cngrams_selector = out['vectorizer'], out['selector']
 
         if fit:
             self.feature_names = np.asarray(self.feature_names)
