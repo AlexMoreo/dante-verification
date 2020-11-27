@@ -46,7 +46,7 @@ param_grid = {
     'mnb': {'alpha': np.logspace(-7,-1,7)}
 }
 
-config_loo = {
+config_feature_extraction = {
     'function_words_freq': 'latin',
     'conjugations_freq': 'latin',
     'features_Mendenhall': True,
@@ -62,6 +62,3 @@ config_loo = {
     'window_size': 3,
     'normalize_features': True
 }
-
-config_unk = config_loo.copy()
-config_unk['feature_selection_ratio']=0.1

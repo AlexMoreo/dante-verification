@@ -37,7 +37,7 @@ def main():
             n_full_docs = len(positive) + len(negative)
             print(f'read {n_full_docs} documents from {path}')
 
-            feature_extractor = FeatureExtractor(**settings.config_loo)
+            feature_extractor = FeatureExtractor(**settings.config_feature_extraction)
 
             Xtr, ytr, groups = feature_extractor.fit_transform(positive, negative)
             frange_chgrams = feature_extractor.feature_range['_cngrams_task']

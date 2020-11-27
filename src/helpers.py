@@ -54,9 +54,9 @@ def check_log_loo(args):
 
 
 def check_log_unknown(args):
+    args.unknown_name = pathlib.Path(args.unknown).name
     if args.log is None:
         os.makedirs('../results', exist_ok=True)
         assert os.path.exists(args.unknown), f'file {args.unknown} does not exist'
-        args.unknown_name = pathlib.Path(args.unknown).name
         args.log = f'../results/Unknown{args.unknown_name}_Corpus{args.corpus_name}.Author{args.positive}.' \
                    f'fs{args.featsel}.classweight{str(args.class_weight)}.CLS{args.learner}.txt'

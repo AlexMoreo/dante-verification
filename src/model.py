@@ -9,7 +9,6 @@ from util.evaluation import f1_metric
 from typing import List, Union
 
 
-
 class AuthorshipVerificator(BaseEstimator):
 
     def __init__(self, nfolds=10, param_grid=None, learner=None, C=1., alpha=0.001, class_weight='balanced',
@@ -24,10 +23,7 @@ class AuthorshipVerificator(BaseEstimator):
         self.feat_selection_slices = feat_selection_slices
         self.feat_selection_ratio = feat_selection_ratio
 
-    def fit(self, X, y, groups=None, hyperparam_optimization=True):
-        if self.param_grid is None and hyperparam_optimization:
-            raise ValueError('Param grid is None, but hyperparameter optimization is requested')
-
+    def fit(self, X, y, groups=None):
         if self.feat_selection_slices is not None:
             self.fs = MultiRangeFeatureSelector(self.feat_selection_slices, feat_sel=self.feat_selection_ratio)
             X = self.fs.fit(X, y).transform(X)
@@ -37,7 +33,7 @@ class AuthorshipVerificator(BaseEstimator):
                 C=self.C, class_weight=self.class_weight, max_iter=1000, random_state=self.random_seed, solver='lbfgs'
             )
         elif self.learner == 'svm':
-            self.classifier = LinearSVC(C=self.C, class_weight=self.class_weight)
+            self.classifier = LinearSVC(C=self.C, class_weight=self.class_weight, max_iter=2500, random_state=self.random_seed)
         elif self.learner == 'mnb':
             self.classifier = MultinomialNB(alpha=self.alpha)
 
@@ -47,7 +43,7 @@ class AuthorshipVerificator(BaseEstimator):
         if groups is None:
             groups = np.arange(len(y))
 
-        if hyperparam_optimization and (positive_examples >= self.nfolds) and (len(np.unique(groups[y==1])) > 1):
+        if (positive_examples >= self.nfolds) and (len(np.unique(groups[y==1])) > 1):
             folds = list(GroupKFold(n_splits=self.nfolds).split(X, y, groups))
             self.estimator = GridSearchCV(
                 self.classifier, param_grid=self.param_grid, cv=folds, scoring=make_scorer(f1_metric), n_jobs=-1,
@@ -135,18 +131,3 @@ class MultiRangeFeatureSelector(BaseEstimator, TransformerMixin):
     def __sort_ranges(self, ranges: List[slice]):
         return np.asarray(ranges)[np.argsort([r.start for r in ranges])[::-1]]
 
-
-def get_valid_folds(nfolds, X, y, groups, max_trials=100):
-    trials = 0
-    folds = list(GroupKFold(n_splits=nfolds).split(X, y, groups))
-    n_docs = len(y)
-    print(f'different classes={np.unique(y)}; #different documents={len(np.unique(groups))} positives={len(np.unique(groups[y==1]))}')
-    while any(len(np.unique(y[train])) < 2 for train, test in folds):
-        shuffle_index = np.random.permutation(n_docs)
-        X, y, groups = X[shuffle_index], y[shuffle_index], groups[shuffle_index]
-        folds = list(GroupKFold(n_splits=nfolds).split(X, y, groups))
-        print(f'\ttrial{trials}:{[len(np.unique(y[train])) for train, test in folds]}')
-        trials+=1
-        if trials>max_trials:
-            raise ValueError(f'could not meet condition after {max_trials} trials')
-    return folds
