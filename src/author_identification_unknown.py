@@ -61,7 +61,8 @@ def main():
         print(f'Checking for the hypothesis that {author} was the author of {args.unknown_name}')
         pred = av.predict_proba(ep)
         pred = pred[0,1]
-        tee(f'{args.unknown}: Posterior probability for {author} is {pred:.4f}', log)
+        tee(f'{args.unknown}: Posterior probability for {author} is {pred:.4f};\n'
+            f'this means the classifier attributes the text to {"not-" if pred<0.5 else ""}{author}', log)
 
     log.close()
 

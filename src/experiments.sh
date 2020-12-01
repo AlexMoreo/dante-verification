@@ -17,14 +17,14 @@ MedLatin2="../MedLatin/Corpora/MedLatin2"
 
 EPXIII1="../MedLatin/Epistle/EpistolaXIII_1.txt"
 EPXIII2="../MedLatin/Epistle/EpistolaXIII_2.txt"
-EPXIV="../Epistola_ArigoVII.txt"
+EPXIV="../MedLatin/Epistle/Epistola_ArigoVII.txt"
 
 for learner in lr svm mnb ; do
   $PYLOO $MedLatin1 ALL --learner $learner --log ../results/resultsLOO_EP1_$learner.txt
   $PYLOO $MedLatin2 ALL --learner $learner --log ../results/resultsLOO_EP2_$learner.txt
-
-  $PYUNK $MedLatin1 Dante $EPXIII1 --learner $learner --log ../results/resultsUNK_EP13_1_$learner.txt
-  $PYUNK $MedLatin2 Dante $EPXIII2 --learner $learner --log ../results/resultsUNK_EP13_2_$learner.txt
-  $PYUNK $MedLatin1 Dante $EPXIV --learner $learner --log ../results/resultsUNK_EP14_$learner.txt
 done
+
+$PYUNK $MedLatin1 Dante $EPXIII1 --learner lr --log ../results/resultsUNK_EP13_1_lr.txt
+$PYUNK $MedLatin2 Dante $EPXIII2 --learner lr --log ../results/resultsUNK_EP13_2_lr.txt
+$PYUNK $MedLatin1 Dante $EPXIV --learner lr --log ../results/resultsUNK_EP14_lr.txt
 
