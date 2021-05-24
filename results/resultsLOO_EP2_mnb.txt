@@ -1,0 +1,33 @@
+BenvenutoDaImola
+	F1 = 0.000
+	Acc = 0.700
+	TP=0 FP=6 FN=3 TN=21
+	Errors for BenvenutoDaImola: BenvenutoDaImola_ValerioMassimo.txt, BenvenutoDaImola_ComentumSuperDantisAldigherijComoediam.txt, BenvenutoDaImola_GlosseVirgilio.txt, RaimundusLullus_ArsAmativaBoni.txt, GuidoDaPisa_ExpositionesComediam.txt, GiovanniBoccaccio_DeGenealogia.txt, IulianusDeSpira_VitaSanctiFrancisci.txt, IacobusDeVaragine_ChronicaCivitatisIanuensis.txt, PietroAlighieri_ComentumSuperComedie.txt
+BoncompagnoDaSigna
+	F1 = 0.000
+	Acc = 0.867
+	TP=0 FP=0 FN=4 TN=26
+	Errors for BoncompagnoDaSigna: BoncompagnoDaSigna_RotaVeneris.txt, BoncompagnoDaSigna_LiberDeObsidioneAncone.txt, BoncompagnoDaSigna_Ysagoge.txt, BoncompagnoDaSigna_Palma.txt
+Dante
+	F1 = 0.000
+	Acc = 0.933
+	TP=0 FP=0 FN=2 TN=28
+	Errors for Dante: Dante_Monarchia.txt, Dante_DeVulgariEloquentia.txt
+GiovanniBoccaccio
+	F1 = 0.857
+	Acc = 0.967
+	TP=3 FP=1 FN=0 TN=26
+	Errors for GiovanniBoccaccio: GuidoDeColumnis_HistoriaDestructionisTroiae.txt
+GiovanniDelVirgilio
+	F1 = 0.000
+	Acc = 0.933
+	TP=0 FP=0 FN=2 TN=28
+	Errors for GiovanniDelVirgilio: GiovanniDelVirgilio_ArsDictaminis.txt, GiovanniDelVirgilio_Allegorie.txt
+NicolaTrevet
+	F1 = 1.000
+	Acc = 1.000
+	TP=2 FP=0 FN=0 TN=28
+	Errors for NicolaTrevet: 
+LOO Macro-F1 = 0.310
+LOO Micro-F1 = 0.357
+LOO Accuracy = 0.900
