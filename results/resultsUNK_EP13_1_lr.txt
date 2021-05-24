@@ -1,1 +1,0 @@
-../MedLatin/Epistle/EpistolaXIII_1.txt: Posterior probability for Dante is 0.3675

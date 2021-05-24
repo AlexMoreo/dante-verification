@@ -2,9 +2,10 @@
 set -x
 
 corpus='../MedLatin'
+urldata='https://zenodo.org/record/4298503/files/MedLatin.zip'
 
 if [ ! -d $corpus ]; then
-  curl -0 http://hlt.isti.cnr.it/medlatin/MedLatin.zip -o ../MedLatin.zip
+  curl -0 $urldata -o ../MedLatin.zip
   unzip ../MedLatin.zip -d ../
   rm ../MedLatin.zip
 fi
@@ -12,12 +13,14 @@ fi
 PYLOO="python3 author_identification_loo.py"
 PYUNK="python3 author_identification_unknown.py"
 
-MedLatin1="../MedLatin/Corpora/MedLatin1"
-MedLatin2="../MedLatin/Corpora/MedLatin2"
+MedLatin1="../MedLatin/Corpora/MedLatinEpi"
+MedLatin2="../MedLatin/Corpora/MedLatinLit"
 
 EPXIII1="../MedLatin/Epistle/EpistolaXIII_1.txt"
 EPXIII2="../MedLatin/Epistle/EpistolaXIII_2.txt"
 EPXIV="../MedLatin/Epistle/Epistola_ArigoVII.txt"
+
+mkdir -p ../results
 
 for learner in lr svm mnb ; do
   $PYLOO $MedLatin1 ALL --learner $learner --log ../results/resultsLOO_EP1_$learner.txt

@@ -43,7 +43,7 @@ grid_C = np.logspace(-3,3,7)
 param_grid = {
     'lr': {'C': grid_C},
     'svm': {'C': grid_C},
-    'mnb': {'alpha': np.logspace(-7,-1,7)}
+    'mnb': {'alpha': np.logspace(-7,0,8)}
 }
 
 config_feature_extraction = {

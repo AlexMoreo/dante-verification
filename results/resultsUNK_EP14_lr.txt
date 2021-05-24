@@ -1,1 +1,0 @@
-../Epistola_ArigoVII.txt: Posterior probability for Dante is 0.0258

@@ -9,6 +9,7 @@ import helpers
 from helpers import tee
 import os
 
+
 def main():
     log = open(args.log, 'wt')
     discarded = 0
